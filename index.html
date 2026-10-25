@@ -35,7 +35,7 @@
         }
         .btn-action:active { transform: translateY(8px); box-shadow: 0 0 0 #cc0044; }
         
-        #status { position: absolute; top: 10px; left: 10px; font-size: 10px; color: #555; }
+        #status { position: absolute; top: 10px; left: 10px; font-size: 10px; color: #ffaa00; width: 90%; word-break: break-all; }
     </style>
 </head>
 <body>
@@ -47,7 +47,7 @@
 
     <div class="dpad">
         <div class="btn up" onpointerdown="sendCmd('U')">▲</div>
-        <div class="btn left" onpointerdown="send_cmd_safe('L')">◀</div>
+        <div class="btn left" onpointerdown="sendCmd('L')">◀</div>
         <div class="center"></div>
         <div class="btn right" onpointerdown="sendCmd('R')">▶</div>
         <div class="btn down" onpointerdown="sendCmd('D')">▼</div>
@@ -67,15 +67,17 @@
         let client;
         
         const clientId = "celular_" + playerId + "_" + Math.random().toString(16).substr(2, 6);
-        client = new Paho.MQTT.Client("broker.hivemq.com", 8443, "/mqtt", clientId);
+        // Usando broker EMQX (mais estável para WebSockets)
+        client = new Paho.MQTT.Client("broker.emqx.io", 8083, "/mqtt", clientId);
         
-        client.onConnectionLost = () => {
-            document.getElementById('status').innerText = "Desconectado";
+        client.onConnectionLost = (responseObject) => {
+            document.getElementById('status').innerText = "Perdido: " + responseObject.errorMessage;
             document.getElementById('status').style.color = "#ff0055";
         };
         
         client.connect({
             useSSL: true,
+            timeout: 10,
             onSuccess: () => {
                 document.getElementById('status').innerText = "Conectado à sala " + roomId;
                 document.getElementById('status').style.color = "#00e5ff";
@@ -83,6 +85,10 @@
                 let msg = new Paho.MQTT.Message("P" + playerId + "_CONNECT");
                 msg.destinationName = topic;
                 client.send(msg);
+            },
+            onFailure: (err) => {
+                document.getElementById('status').innerText = "Erro: " + (err.errorMessage || JSON.stringify(err));
+                document.getElementById('status').style.color = "#ff0055";
             }
         });
         
@@ -95,9 +101,7 @@
             }
         }
         
-        function send_cmd_safe(cmd) { sendCmd(cmd); }
-        
-        document.addEventListener('contextnone', event => event.preventDefault());
+        document.addEventListener('contextmenu', event => event.preventDefault());
     </script>
 </body>
 </html>
