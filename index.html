@@ -67,8 +67,8 @@
         let client;
         
         const clientId = "celular_" + playerId + "_" + Math.random().toString(16).substr(2, 6);
-        // Usando broker EMQX (mais estável para WebSockets)
-        client = new Paho.MQTT.Client("broker.emqx.io", 8083, "/mqtt", clientId);
+        // CORREÇÃO: Porta 8084 para Secure WebSocket (WSS) com EMQX
+        client = new Paho.MQTT.Client("broker.emqx.io", 8084, "/mqtt", clientId);
         
         client.onConnectionLost = (responseObject) => {
             document.getElementById('status').innerText = "Perdido: " + responseObject.errorMessage;
