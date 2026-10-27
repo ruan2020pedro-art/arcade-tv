@@ -2,8 +2,8 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Arcade Controller - Horizontal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Arcade Controller Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
@@ -19,95 +19,137 @@
             height: 100vh; 
             width: 100vw;
             box-sizing: border-box;
-            touch-action: none; 
+            touch-action: none; /* Previne scroll e zoom na tela inteira */
             user-select: none;
+            -webkit-user-select: none;
             overflow: hidden;
-            padding: 20px 40px;
+            padding: 20px 60px;
         }
         
         .header { 
             position: absolute; 
-            top: 10px; 
+            top: 15px; 
             left: 50%; 
             transform: translateX(-50%);
             text-align: center; 
             color: #00e5ff; 
-            font-size: 11px; 
-        }
-        
-        .dpad { 
-            display: grid; 
-            grid-template-columns: 65px 65px 65px; 
-            grid-template-rows: 65px 65px 65px; 
-            gap: 4px; 
-        }
-        
-        .btn { 
-            background: #2a2a2a; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            font-size: 20px; 
-            color: #fff; 
-            cursor: pointer; 
-            border: 2px solid #444;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .btn:active, .btn.pressed { background: #00e5ff; border-color: #00e5ff; color: #000; }
-        .btn.up { grid-column: 2; grid-row: 1; border-radius: 10px 10px 0 0; }
-        .btn.left { grid-column: 1; grid-row: 2; border-radius: 10px 0 0 10px; }
-        .btn.right { grid-column: 3; grid-row: 2; border-radius: 0 10px 10px 0; }
-        .btn.down { grid-column: 2; grid-row: 3; border-radius: 0 0 10px 10px; }
-        .center { grid-column: 2; grid-row: 2; background: #1a1a1a; }
-        
-        .action-container {
-            display: flex;
-            align-items: center;
-            gap: 25px;
+            font-size: 14px;
+            text-shadow: 1px 1px 0 #000;
         }
 
-        .btn-action { 
-            width: 80px; height: 80px; border-radius: 50%; 
-            background: #ff0055; border: 4px solid #cc0044; 
-            color: white; font-size: 18px; display: flex; justify-content: center; align-items: center; 
-            box-shadow: 0 6px 0 #cc0044; cursor: pointer;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .btn-action:active, .btn-action.pressed { transform: translateY(6px); box-shadow: 0 0 0 #cc0044; }
-        
         #status { 
             position: absolute; 
-            bottom: 5px; 
-            left: 20px; 
-            font-size: 8px; 
+            bottom: 15px; 
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px; 
             color: #ffaa00; 
             max-width: 90%; 
-            word-break: break-all; 
+            word-break: break-all;
+            text-align: center;
         }
+        
+        /* --- D-PAD VIRTUAL AVANÇADO (Lado Esquerdo) --- */
+        #dpad-zone {
+            position: relative;
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            background: radial-gradient(circle, rgba(40,40,40,0.5) 0%, rgba(20,20,20,0.8) 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .dpad-btn {
+            position: absolute;
+            background: #2a2a2a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            font-size: 18px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: background 0.05s ease;
+        }
+        
+        .dpad-btn.active {
+            background: #444;
+            color: #00e5ff;
+            box-shadow: inset 0 0 10px rgba(0, 229, 255, 0.3);
+        }
+
+        /* Posições baseadas no mockup do usuário */
+        #dpad-up { top: 15px; left: 75px; width: 70px; height: 65px; }
+        #dpad-down { bottom: 15px; left: 75px; width: 70px; height: 65px; }
+        #dpad-left { left: 15px; top: 75px; width: 65px; height: 70px; }
+        #dpad-right { right: 15px; top: 75px; width: 65px; height: 70px; }
+
+        /* --- BOTÕES DE AÇÃO (Lado Direito) --- */
+        .action-zone {
+            position: relative;
+            width: 220px;
+            height: 220px;
+        }
+
+        .action-btn {
+            position: absolute;
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            color: white;
+            font-family: 'Press Start 2P', cursive;
+            border: none;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.5);
+            transition: transform 0.05s ease, box-shadow 0.05s ease;
+        }
+        
+        .action-btn.active {
+            transform: translateY(4px) scale(0.95);
+            box-shadow: 0 0 15px rgba(255,255,255,0.4);
+            filter: brightness(1.3);
+        }
+
+        /* Cores baseadas no mockup: Y Laranja, X Azul, B Vermelho, A Verde */
+        #btn-Y { top: 10px; left: 77px; background: #e67e22; text-shadow: 2px 2px 0 #a04000; }
+        #btn-X { left: 10px; top: 77px; background: #3498db; text-shadow: 2px 2px 0 #1f618d; }
+        #btn-B { right: 10px; top: 77px; background: #e74c3c; text-shadow: 2px 2px 0 #922b21; }
+        #btn-A { bottom: 10px; left: 77px; background: #2ecc71; text-shadow: 2px 2px 0 #1d8348; }
+
     </style>
 </head>
 <body>
-    <div id="status">Conectando...</div>
     
     <div class="header">
         <div id="player-id">PLAY X</div>
     </div>
 
-    <!-- D-PAD LADO ESQUERDO -->
-    <div class="dpad">
-        <div class="btn up" id="btn-U">▲</div>
-        <div class="btn left" id="btn-L">◀</div>
-        <div class="center"></div>
-        <div class="btn right" id="btn-R">▶</div>
-        <div class="btn down" id="btn-D">▼</div>
+    <!-- D-PAD VIRTUAL LADO ESQUERDO -->
+    <div id="dpad-zone">
+        <div class="dpad-btn" id="dpad-up">▲</div>
+        <div class="dpad-btn" id="dpad-left">◀</div>
+        <div class="dpad-btn" id="dpad-right">▶</div>
+        <div class="dpad-btn" id="dpad-down">▼</div>
     </div>
     
     <!-- BOTÕES DE AÇÃO LADO DIREITO -->
-    <div class="action-container">
-        <div class="btn-action" id="btn-A">A</div>
+    <div class="action-zone">
+        <div class="action-btn" id="btn-Y">Y</div>
+        <div class="action-btn" id="btn-X">X</div>
+        <div class="action-btn" id="btn-B">B</div>
+        <div class="action-btn" id="btn-A">A</div>
     </div>
+    
+    <div id="status">Conectando...</div>
 
     <script>
+        // CONFIGURAÇÃO MQTT
         const urlParams = new URLSearchParams(window.location.search);
         const roomId = urlParams.get('sala') || "0000";
         const playerId = urlParams.get('jogador') || "1";
@@ -120,24 +162,21 @@
         client = new Paho.MQTT.Client("broker.emqx.io", 8084, "/mqtt", clientId);
         
         client.onConnectionLost = (responseObject) => {
-            document.getElementById('status').innerText = "Perdido: " + responseObject.errorMessage;
-            document.getElementById('status').style.color = "#ff0055";
+            document.getElementById('status').innerText = "Desconectado!";
+            document.getElementById('status').style.color = "#e74c3c";
         };
         
         client.connect({
             useSSL: true,
-            timeout: 10,
+            timeout: 5,
             onSuccess: () => {
                 document.getElementById('status').innerText = "Conectado à sala " + roomId;
-                document.getElementById('status').style.color = "#00e5ff";
-                
-                let msg = new Paho.MQTT.Message("P" + playerId + "_CONNECT");
-                msg.destinationName = topic;
-                client.send(msg);
+                document.getElementById('status').style.color = "#2ecc71";
+                sendCmd("CONNECT");
             },
             onFailure: (err) => {
-                document.getElementById('status').innerText = "Erro: " + (err.errorMessage || JSON.stringify(err));
-                document.getElementById('status').style.color = "#ff0055";
+                document.getElementById('status').innerText = "Falha na conexão!";
+                document.getElementById('status').style.color = "#e74c3c";
             }
         });
         
@@ -145,55 +184,152 @@
             if(client && client.isConnected()) {
                 const message = new Paho.MQTT.Message("P" + playerId + "_" + cmd);
                 message.destinationName = topic;
+                // QoS 0 (Fire and Forget) garante menor latência possível (entrega ultra-rápida sem verificação pesada)
+                message.qos = 0; 
                 client.send(message);
-                if(navigator.vibrate) navigator.vibrate(25);
+            }
+        }
+        
+        // VIBRAÇÃO OTIMIZADA (Para feedback tátil)
+        function hapticFeedback() {
+            if(navigator.vibrate) navigator.vibrate(15);
+        }
+
+        // ==========================================
+        // D-PAD: LÓGICA DE DESLIZAMENTO (Touch Move)
+        // ==========================================
+        const dpadZone = document.getElementById('dpad-zone');
+        const dpadBtns = {
+            'U': document.getElementById('dpad-up'),
+            'D': document.getElementById('dpad-down'),
+            'L': document.getElementById('dpad-left'),
+            'R': document.getElementById('dpad-right')
+        };
+        
+        let currentDpadDir = null; // Armazena a direção atual para evitar flood
+
+        function handleDpadTouch(e) {
+            e.preventDefault(); // Evita comportamentos nativos indesejados
+            
+            // Só liga para o primeiro dedo que tocou na zona do D-Pad
+            let touch = null;
+            for(let i=0; i < e.touches.length; i++) {
+                // Checa se o toque começou dentro ou se moveu sobre a zona do D-Pad
+                let el = document.elementFromPoint(e.touches[i].clientX, e.touches[i].clientY);
+                if (el && (el.id === 'dpad-zone' || el.classList.contains('dpad-btn'))) {
+                    touch = e.touches[i];
+                    break;
+                }
+            }
+
+            if (!touch) {
+                // Dedo saiu da zona do D-Pad
+                resetDpad();
+                return;
+            }
+
+            // Descobre o centro do D-pad Zone
+            const rect = dpadZone.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+
+            // Calcula o deslocamento do toque em relação ao centro
+            const dx = touch.clientX - centerX;
+            const dy = touch.clientY - centerY;
+            
+            // Distância do centro
+            const distance = Math.sqrt(dx*dx + dy*dy);
+            
+            // Zona Morta (Deadzone): se tocar bem no centro, não faz nada
+            if (distance < 20) {
+                resetDpad();
+                return;
+            }
+
+            // Determina o ângulo do toque (em graus)
+            // atan2 retorna de -PI a +PI. Convertemos para 0 a 360 graus.
+            let angle = Math.atan2(dy, dx) * (180 / Math.PI);
+            if (angle < 0) angle += 360;
+
+            let newDir = null;
+
+            // Define zonas de ângulo para cada direção (Tolerância para diagonais simplificada)
+            // Direita: 315° a 45°
+            if (angle >= 315 || angle < 45) newDir = 'R';
+            // Baixo: 45° a 135°
+            else if (angle >= 45 && angle < 135) newDir = 'D';
+            // Esquerda: 135° a 225°
+            else if (angle >= 135 && angle < 225) newDir = 'L';
+            // Cima: 225° a 315°
+            else if (angle >= 225 && angle < 315) newDir = 'U';
+
+            // Só envia comando se a direção mudou
+            if (newDir !== currentDpadDir) {
+                resetDpadVisuals(); // Limpa as cores ativas
+                
+                if (newDir) {
+                    dpadBtns[newDir].classList.add('active');
+                    sendCmd(newDir);
+                    hapticFeedback();
+                }
+                
+                currentDpadDir = newDir;
             }
         }
 
-        // CORREÇÃO DO BUG DO PERSONAGEM CORRENDO SOZINHO (DETECÇÃO DE TOQUE CONTINUO E RELEASE)
-        const buttons = {
-            'btn-U': 'U',
-            'btn-L': 'L',
-            'btn-R': 'R',
-            'btn-D': 'D',
-            'btn-A': 'A'
-        };
+        function resetDpadVisuals() {
+            Object.values(dpadBtns).forEach(btn => btn.classList.remove('active'));
+        }
 
-        Object.keys(buttons).forEach(id => {
-            const el = document.getElementById(id);
-            const cmd = buttons[id];
+        function resetDpad() {
+            if (currentDpadDir !== null) {
+                resetDpadVisuals();
+                sendCmd("STOP");
+                currentDpadDir = null;
+            }
+        }
 
-            el.addEventListener('pointerdown', (e) => {
-                e.preventDefault();
-                el.classList.add('pressed');
-                sendCmd(cmd);
-            });
+        // Adiciona listeners para o D-Pad (Touch Start, Move, End)
+        dpadZone.addEventListener('touchstart', handleDpadTouch, { passive: false });
+        dpadZone.addEventListener('touchmove', handleDpadTouch, { passive: false });
+        dpadZone.addEventListener('touchend', resetDpad);
+        dpadZone.addEventListener('touchcancel', resetDpad);
 
-            el.addEventListener('pointerup', (e) => {
-                e.preventDefault();
-                el.classList.remove('pressed');
-                if(cmd === 'L' || cmd === 'R') {
-                    sendCmd('STOP');
-                }
-            });
 
-            el.addEventListener('pointercancel', (e) => {
-                e.preventDefault();
-                el.classList.remove('pressed');
-                if(cmd === 'L' || cmd === 'R') {
-                    sendCmd('STOP');
-                }
-            });
-            
-            el.addEventListener('pointerleave', (e) => {
-                el.classList.remove('pressed');
-                if(cmd === 'L' || cmd === 'R') {
-                    sendCmd('STOP');
-                }
-            });
-        });
+        // ==========================================
+        // BOTÕES DE AÇÃO: MULTI-TOUCH E INDEPENDENTES
+        // ==========================================
+        const actionBtns = ['A', 'B', 'X', 'Y'];
         
+        actionBtns.forEach(btnName => {
+            const btnEl = document.getElementById('btn-' + btnName);
+            
+            // Usamos pointer events aqui pois os botões não dependem de deslize longo (apenas aperta e solta)
+            btnEl.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                btnEl.classList.add('active');
+                // Envia comando (ex: "P1_A" para o Mario Pular ou "P1_Y" para atirar no futuro)
+                // Para manter compatibilidade com o jogo atual, vamos mapear 'A' ou 'B' para JUMP/Ação.
+                if (btnName === 'A' || btnName === 'B') {
+                    sendCmd("JUMP");
+                } else {
+                    sendCmd(btnName); // Para uso futuro (ex: Jogo de luta, tiro)
+                }
+                hapticFeedback();
+            }, { passive: false });
+
+            const releaseAction = (e) => {
+                e.preventDefault();
+                btnEl.classList.remove('active');
+            };
+
+            btnEl.addEventListener('touchend', releaseAction);
+            btnEl.addEventListener('touchcancel', releaseAction);
+        });
+
+        // Previne menu de contexto ao segurar a tela
         document.addEventListener('contextmenu', event => event.preventDefault());
+
     </script>
 </body>
 </html>
