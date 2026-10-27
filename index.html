@@ -81,11 +81,11 @@
             box-shadow: inset 0 0 10px rgba(0, 229, 255, 0.3);
         }
 
-        /* Posições baseadas no mockup do usuário */
-        #dpad-up { top: 15px; left: 75px; width: 70px; height: 65px; }
-        #dpad-down { bottom: 15px; left: 75px; width: 70px; height: 65px; }
-        #dpad-left { left: 15px; top: 75px; width: 65px; height: 70px; }
-        #dpad-right { right: 15px; top: 75px; width: 65px; height: 70px; }
+        /* Posições mais espaçadas (Deadzone) para evitar clique duplo acidental */
+        #dpad-up { top: 12px; left: 80px; width: 60px; height: 60px; border-radius: 12px; }
+        #dpad-down { bottom: 12px; left: 80px; width: 60px; height: 60px; border-radius: 12px; }
+        #dpad-left { left: 12px; top: 80px; width: 60px; height: 60px; border-radius: 12px; }
+        #dpad-right { right: 12px; top: 80px; width: 60px; height: 60px; border-radius: 12px; }
 
         /* --- BOTÕES DE AÇÃO (Lado Direito) --- */
         .action-zone {
@@ -132,18 +132,18 @@
 
     <!-- D-PAD VIRTUAL LADO ESQUERDO -->
     <div id="dpad-zone">
-        <div class="dpad-btn" id="dpad-up">▲</div>
-        <div class="dpad-btn" id="dpad-left">◀</div>
-        <div class="dpad-btn" id="dpad-right">▶</div>
-        <div class="dpad-btn" id="dpad-down">▼</div>
+        <div class="dpad-btn" id="dpad-up" data-cmd="U">▲</div>
+        <div class="dpad-btn" id="dpad-left" data-cmd="L">◀</div>
+        <div class="dpad-btn" id="dpad-right" data-cmd="R">▶</div>
+        <div class="dpad-btn" id="dpad-down" data-cmd="D">▼</div>
     </div>
     
     <!-- BOTÕES DE AÇÃO LADO DIREITO -->
     <div class="action-zone">
-        <div class="action-btn" id="btn-Y">Y</div>
-        <div class="action-btn" id="btn-X">X</div>
-        <div class="action-btn" id="btn-B">B</div>
-        <div class="action-btn" id="btn-A">A</div>
+        <div class="action-btn" id="btn-Y" data-cmd="Y">Y</div>
+        <div class="action-btn" id="btn-X" data-cmd="X">X</div>
+        <div class="action-btn" id="btn-B" data-cmd="JUMP">B</div>
+        <div class="action-btn" id="btn-A" data-cmd="JUMP">A</div>
     </div>
     
     <div id="status">Conectando...</div>
@@ -196,138 +196,64 @@
         }
 
         // ==========================================
-        // D-PAD: LÓGICA DE DESLIZAMENTO (Touch Move)
+        // ENGINE V4: MULTI-TOQUE GLOBAL ABSOLUTO
         // ==========================================
-        const dpadZone = document.getElementById('dpad-zone');
-        const dpadBtns = {
-            'U': document.getElementById('dpad-up'),
-            'D': document.getElementById('dpad-down'),
-            'L': document.getElementById('dpad-left'),
-            'R': document.getElementById('dpad-right')
-        };
+        // Este sistema rastreia múltiplos dedos simultaneamente na tela
+        // permitindo apertar infinitos botões ao mesmo tempo sem que um cancele o outro.
         
-        let currentDpadDir = null; // Armazena a direção atual para evitar flood
+        let activeCmds = new Set();
 
-        function handleDpadTouch(e) {
-            e.preventDefault(); // Evita comportamentos nativos indesejados
+        function handleTouchEvents(e) {
+            e.preventDefault(); // Previne travamentos e scrolls nativos do celular
             
-            // Só liga para o primeiro dedo que tocou na zona do D-Pad
-            let touch = null;
-            for(let i=0; i < e.touches.length; i++) {
-                // Checa se o toque começou dentro ou se moveu sobre a zona do D-Pad
-                let el = document.elementFromPoint(e.touches[i].clientX, e.touches[i].clientY);
-                if (el && (el.id === 'dpad-zone' || el.classList.contains('dpad-btn'))) {
-                    touch = e.touches[i];
-                    break;
+            let currentlyTouched = new Set();
+
+            // 1. Mapeia todos os dedos tocando na tela neste milissegundo
+            for (let i = 0; i < e.touches.length; i++) {
+                let touch = e.touches[i];
+                // Descobre exatamente qual elemento HTML está debaixo de cada dedo
+                let el = document.elementFromPoint(touch.clientX, touch.clientY);
+                if (el && el.hasAttribute('data-cmd')) {
+                    currentlyTouched.add(el.getAttribute('data-cmd'));
                 }
             }
 
-            if (!touch) {
-                // Dedo saiu da zona do D-Pad
-                resetDpad();
-                return;
-            }
-
-            // Descobre o centro do D-pad Zone
-            const rect = dpadZone.getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const centerY = rect.top + rect.height / 2;
-
-            // Calcula o deslocamento do toque em relação ao centro
-            const dx = touch.clientX - centerX;
-            const dy = touch.clientY - centerY;
-            
-            // Distância do centro
-            const distance = Math.sqrt(dx*dx + dy*dy);
-            
-            // Zona Morta (Deadzone): se tocar bem no centro, não faz nada
-            if (distance < 20) {
-                resetDpad();
-                return;
-            }
-
-            // Determina o ângulo do toque (em graus)
-            // atan2 retorna de -PI a +PI. Convertemos para 0 a 360 graus.
-            let angle = Math.atan2(dy, dx) * (180 / Math.PI);
-            if (angle < 0) angle += 360;
-
-            let newDir = null;
-
-            // Define zonas de ângulo para cada direção (Tolerância para diagonais simplificada)
-            // Direita: 315° a 45°
-            if (angle >= 315 || angle < 45) newDir = 'R';
-            // Baixo: 45° a 135°
-            else if (angle >= 45 && angle < 135) newDir = 'D';
-            // Esquerda: 135° a 225°
-            else if (angle >= 135 && angle < 225) newDir = 'L';
-            // Cima: 225° a 315°
-            else if (angle >= 225 && angle < 315) newDir = 'U';
-
-            // Só envia comando se a direção mudou
-            if (newDir !== currentDpadDir) {
-                resetDpadVisuals(); // Limpa as cores ativas
-                
-                if (newDir) {
-                    dpadBtns[newDir].classList.add('active');
-                    sendCmd(newDir);
-                    hapticFeedback();
+            // 2. Compara os toques atuais com o estado anterior para identificar NOVES TOQUES
+            currentlyTouched.forEach(cmd => {
+                if (!activeCmds.has(cmd)) {
+                    activeCmds.add(cmd); // Registra que está pressionado
+                    // Acende o visual da telha (continua apertada)
+                    document.querySelectorAll(`[data-cmd="${cmd}"]`).forEach(btn => btn.classList.add('active'));
+                    sendCmd(cmd); // Envia o comando para a TV
+                    hapticFeedback(); // Vibra
                 }
-                
-                currentDpadDir = newDir;
-            }
-        }
+            });
 
-        function resetDpadVisuals() {
-            Object.values(dpadBtns).forEach(btn => btn.classList.remove('active'));
-        }
-
-        function resetDpad() {
-            if (currentDpadDir !== null) {
-                resetDpadVisuals();
-                sendCmd("STOP");
-                currentDpadDir = null;
-            }
-        }
-
-        // Adiciona listeners para o D-Pad (Touch Start, Move, End)
-        dpadZone.addEventListener('touchstart', handleDpadTouch, { passive: false });
-        dpadZone.addEventListener('touchmove', handleDpadTouch, { passive: false });
-        dpadZone.addEventListener('touchend', resetDpad);
-        dpadZone.addEventListener('touchcancel', resetDpad);
-
-
-        // ==========================================
-        // BOTÕES DE AÇÃO: MULTI-TOUCH E INDEPENDENTES
-        // ==========================================
-        const actionBtns = ['A', 'B', 'X', 'Y'];
-        
-        actionBtns.forEach(btnName => {
-            const btnEl = document.getElementById('btn-' + btnName);
-            
-            // Usamos pointer events aqui pois os botões não dependem de deslize longo (apenas aperta e solta)
-            btnEl.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                btnEl.classList.add('active');
-                // Envia comando (ex: "P1_A" para o Mario Pular ou "P1_Y" para atirar no futuro)
-                // Para manter compatibilidade com o jogo atual, vamos mapear 'A' ou 'B' para JUMP/Ação.
-                if (btnName === 'A' || btnName === 'B') {
-                    sendCmd("JUMP");
-                } else {
-                    sendCmd(btnName); // Para uso futuro (ex: Jogo de luta, tiro)
+            // 3. Verifica se algum dedo SALTOU de uma telha (foi solto)
+            activeCmds.forEach(cmd => {
+                if (!currentlyTouched.has(cmd)) {
+                    activeCmds.delete(cmd); // Registra que soltou
+                    // Apaga o visual da telha
+                    document.querySelectorAll(`[data-cmd="${cmd}"]`).forEach(btn => btn.classList.remove('active'));
+                    
+                    // Envia a ordem de parada
+                    if (['U', 'D', 'L', 'R'].includes(cmd)) {
+                        sendCmd('STOP'); // Direcionais param de andar
+                    } else {
+                        sendCmd(cmd + '_RELEASE'); // Ação para de atirar/pular
+                    }
                 }
-                hapticFeedback();
-            }, { passive: false });
+            });
+        }
 
-            const releaseAction = (e) => {
-                e.preventDefault();
-                btnEl.classList.remove('active');
-            };
+        // Conecta o rastreador no documento inteiro. 
+        // Assim, se o dedo escorregar para fora do botão, ele apaga perfeitamente.
+        document.addEventListener('touchstart', handleTouchEvents, { passive: false });
+        document.addEventListener('touchmove', handleTouchEvents, { passive: false });
+        document.addEventListener('touchend', handleTouchEvents, { passive: false });
+        document.addEventListener('touchcancel', handleTouchEvents, { passive: false });
 
-            btnEl.addEventListener('touchend', releaseAction);
-            btnEl.addEventListener('touchcancel', releaseAction);
-        });
-
-        // Previne menu de contexto ao segurar a tela
+        // Previne menus indesejados ao segurar a tela
         document.addEventListener('contextmenu', event => event.preventDefault());
 
     </script>
