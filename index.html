@@ -196,66 +196,137 @@
         }
 
         // ==========================================
-        // ENGINE V4: MULTI-TOQUE GLOBAL ABSOLUTO
+        // ENGINE V6 PRO: HITBOX MATEMÁTICA & JOYSTICK VIRTUAL
         // ==========================================
-        // Este sistema rastreia múltiplos dedos simultaneamente na tela
-        // permitindo apertar infinitos botões ao mesmo tempo sem que um cancele o outro.
-        
+        let dpadCenter = {x: 0, y: 0, radius: 120};
+        let actionCenters = {};
         let activeCmds = new Set();
+        
+        let dpadEls = {
+            'U': document.getElementById('dpad-up'),
+            'D': document.getElementById('dpad-down'),
+            'L': document.getElementById('dpad-left'),
+            'R': document.getElementById('dpad-right')
+        };
+
+        function updateHitboxes() {
+            const dZone = document.getElementById('dpad-zone').getBoundingClientRect();
+            // Centro do D-Pad (Joystick Virtual)
+            dpadCenter = { 
+                x: dZone.left + dZone.width / 2, 
+                y: dZone.top + dZone.height / 2, 
+                radius: (dZone.width / 2) + 60 // Área super generosa (110px+) para não perder o dedo
+            };
+
+            // Centro dos botões de ação
+            const bY = document.getElementById('btn-Y').getBoundingClientRect();
+            const bX = document.getElementById('btn-X').getBoundingClientRect();
+            const bB = document.getElementById('btn-B').getBoundingClientRect();
+            const bA = document.getElementById('btn-A').getBoundingClientRect();
+
+            const actionRadius = 60; // Raio gigante (o botão tem 32px, mas o sensor terá 60px)
+
+            actionCenters = {
+                'Y': { x: bY.left + bY.width/2, y: bY.top + bY.height/2, r: actionRadius, el: document.getElementById('btn-Y') },
+                'X': { x: bX.left + bX.width/2, y: bX.top + bX.height/2, r: actionRadius, el: document.getElementById('btn-X') },
+                'B': { x: bB.left + bB.width/2, y: bB.top + bB.height/2, r: actionRadius, el: document.getElementById('btn-B'), cmd: 'JUMP' },
+                'A': { x: bA.left + bA.width/2, y: bA.top + bA.height/2, r: actionRadius, el: document.getElementById('btn-A'), cmd: 'JUMP' }
+            };
+        }
+
+        // Atualiza as posições ao carregar e ao girar a tela
+        window.addEventListener('load', updateHitboxes);
+        window.addEventListener('resize', () => setTimeout(updateHitboxes, 100));
+        setTimeout(updateHitboxes, 500); // Callback de segurança
 
         function handleTouchEvents(e) {
-            e.preventDefault(); // Previne travamentos e scrolls nativos do celular
-            
-            let currentlyTouched = new Set();
+            e.preventDefault();
 
-            // 1. Mapeia todos os dedos tocando na tela neste milissegundo
+            let newCmds = new Set();
+            let dpadActive = null; 
+            let uiUpdates = new Set();
+
+            // 1. Analisa cada dedo na tela simultaneamente
             for (let i = 0; i < e.touches.length; i++) {
-                let touch = e.touches[i];
-                // Descobre exatamente qual elemento HTML está debaixo de cada dedo
-                let el = document.elementFromPoint(touch.clientX, touch.clientY);
-                if (el && el.hasAttribute('data-cmd')) {
-                    currentlyTouched.add(el.getAttribute('data-cmd'));
+                let tx = e.touches[i].clientX;
+                let ty = e.touches[i].clientY;
+
+                // Checa D-Pad (Joystick Virtual via distância e ângulo)
+                let dx = tx - dpadCenter.x;
+                let dy = ty - dpadCenter.y;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+
+                if (!dpadActive && dist < dpadCenter.radius) {
+                    if (dist > 25) { // Zona Morta central para não acionar à toa
+                        let angle = Math.atan2(dy, dx) * (180 / Math.PI);
+                        if (angle < 0) angle += 360;
+
+                        let dir = null;
+                        if (angle >= 315 || angle < 45) dir = 'R';
+                        else if (angle >= 45 && angle < 135) dir = 'D';
+                        else if (angle >= 135 && angle < 225) dir = 'L';
+                        else if (angle >= 225 && angle < 315) dir = 'U';
+
+                        if (dir) {
+                            dpadActive = dir;
+                            newCmds.add(dir);
+                            uiUpdates.add('DPAD_' + dir);
+                        }
+                    }
+                }
+
+                // Checa Botões de Ação (Sensor circular invisível e estendido)
+                for (let key in actionCenters) {
+                    let btn = actionCenters[key];
+                    let adx = tx - btn.x;
+                    let ady = ty - btn.y;
+                    if (Math.sqrt(adx*adx + ady*ady) < btn.r) {
+                        let cmd = btn.cmd || key;
+                        newCmds.add(cmd);
+                        uiUpdates.add('ACT_' + key);
+                    }
                 }
             }
 
-            // 2. Compara os toques atuais com o estado anterior para identificar NOVES TOQUES
-            currentlyTouched.forEach(cmd => {
-                if (!activeCmds.has(cmd)) {
-                    activeCmds.add(cmd); // Registra que está pressionado
-                    // Acende o visual da telha (continua apertada)
-                    document.querySelectorAll(`[data-cmd="${cmd}"]`).forEach(btn => btn.classList.add('active'));
-                    sendCmd(cmd); // Envia o comando para a TV
-                    hapticFeedback(); // Vibra
-                }
+            // 2. Atualiza a Interface Visual (Classes 'active') instantaneamente
+            Object.values(dpadEls).forEach(el => el.classList.remove('active'));
+            Object.values(actionCenters).forEach(btn => btn.el.classList.remove('active'));
+
+            uiUpdates.forEach(ui => {
+                if (ui.startsWith('DPAD_')) dpadEls[ui.split('_')[1]].classList.add('active');
+                if (ui.startsWith('ACT_')) actionCenters[ui.split('_')[1]].el.classList.add('active');
             });
 
-            // 3. Verifica se algum dedo SALTOU de uma telha (foi solto)
+            // 3. Envia Comandos de PARADA (Release) PRIMEIRO para evitar inputs presos
             activeCmds.forEach(cmd => {
-                if (!currentlyTouched.has(cmd)) {
-                    activeCmds.delete(cmd); // Registra que soltou
-                    // Apaga o visual da telha
-                    document.querySelectorAll(`[data-cmd="${cmd}"]`).forEach(btn => btn.classList.remove('active'));
-                    
-                    // Envia a ordem de parada
+                if (!newCmds.has(cmd)) {
                     if (['U', 'D', 'L', 'R'].includes(cmd)) {
-                        sendCmd('STOP'); // Direcionais param de andar
+                        sendCmd('STOP');
                     } else {
-                        sendCmd(cmd + '_RELEASE'); // Ação para de atirar/pular
+                        sendCmd(cmd + '_RELEASE');
                     }
                 }
             });
+
+            // 4. Envia Comandos de AÇÃO (Press) DEPOIS
+            newCmds.forEach(cmd => {
+                if (!activeCmds.has(cmd)) {
+                    sendCmd(cmd);
+                    hapticFeedback();
+                }
+            });
+
+            // 5. Salva estado atual para o próximo frame
+            activeCmds = newCmds;
         }
 
-        // Conecta o rastreador no documento inteiro. 
-        // Assim, se o dedo escorregar para fora do botão, ele apaga perfeitamente.
+        // Escuta absolutamente todos os movimentos na tela do celular
         document.addEventListener('touchstart', handleTouchEvents, { passive: false });
         document.addEventListener('touchmove', handleTouchEvents, { passive: false });
         document.addEventListener('touchend', handleTouchEvents, { passive: false });
         document.addEventListener('touchcancel', handleTouchEvents, { passive: false });
 
-        // Previne menus indesejados ao segurar a tela
         document.addEventListener('contextmenu', event => event.preventDefault());
-
-    </script>
+</script>
 </body>
 </html>
