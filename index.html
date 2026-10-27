@@ -19,7 +19,7 @@
             height: 100vh; 
             width: 100vw;
             box-sizing: border-box;
-            touch-action: none; /* Previne scroll e zoom na tela inteira */
+            touch-action: none;
             user-select: none;
             -webkit-user-select: none;
             overflow: hidden;
@@ -49,7 +49,6 @@
             text-align: center;
         }
         
-        /* --- D-PAD VIRTUAL AVANÇADO (Lado Esquerdo) --- */
         #dpad-zone {
             position: relative;
             width: 220px;
@@ -81,13 +80,11 @@
             box-shadow: inset 0 0 10px rgba(0, 229, 255, 0.3);
         }
 
-        /* Posições mais espaçadas (Deadzone) para evitar clique duplo acidental */
         #dpad-up { top: 12px; left: 80px; width: 60px; height: 60px; border-radius: 12px; }
         #dpad-down { bottom: 12px; left: 80px; width: 60px; height: 60px; border-radius: 12px; }
         #dpad-left { left: 12px; top: 80px; width: 60px; height: 60px; border-radius: 12px; }
         #dpad-right { right: 12px; top: 80px; width: 60px; height: 60px; border-radius: 12px; }
 
-        /* --- BOTÕES DE AÇÃO (Lado Direito) --- */
         .action-zone {
             position: relative;
             width: 220px;
@@ -116,7 +113,6 @@
             filter: brightness(1.3);
         }
 
-        /* Cores baseadas no mockup: Y Laranja, X Azul, B Vermelho, A Verde */
         #btn-Y { top: 10px; left: 77px; background: #e67e22; text-shadow: 2px 2px 0 #a04000; }
         #btn-X { left: 10px; top: 77px; background: #3498db; text-shadow: 2px 2px 0 #1f618d; }
         #btn-B { right: 10px; top: 77px; background: #e74c3c; text-shadow: 2px 2px 0 #922b21; }
@@ -130,7 +126,6 @@
         <div id="player-id">PLAY X</div>
     </div>
 
-    <!-- D-PAD VIRTUAL LADO ESQUERDO -->
     <div id="dpad-zone">
         <div class="dpad-btn" id="dpad-up" data-cmd="U">▲</div>
         <div class="dpad-btn" id="dpad-left" data-cmd="L">◀</div>
@@ -138,18 +133,16 @@
         <div class="dpad-btn" id="dpad-down" data-cmd="D">▼</div>
     </div>
     
-    <!-- BOTÕES DE AÇÃO LADO DIREITO -->
     <div class="action-zone">
         <div class="action-btn" id="btn-Y" data-cmd="Y">Y</div>
         <div class="action-btn" id="btn-X" data-cmd="X">X</div>
-        <div class="action-btn" id="btn-B" data-cmd="JUMP">B</div>
-        <div class="action-btn" id="btn-A" data-cmd="JUMP">A</div>
+        <div class="action-btn" id="btn-B" data-cmd="B">B</div>
+        <div class="action-btn" id="btn-A" data-cmd="A">A</div>
     </div>
     
     <div id="status">Conectando...</div>
 
     <script>
-        // CONFIGURAÇÃO MQTT
         const urlParams = new URLSearchParams(window.location.search);
         const roomId = urlParams.get('sala') || "0000";
         const playerId = urlParams.get('jogador') || "1";
@@ -184,20 +177,15 @@
             if(client && client.isConnected()) {
                 const message = new Paho.MQTT.Message("P" + playerId + "_" + cmd);
                 message.destinationName = topic;
-                // QoS 0 (Fire and Forget) garante menor latência possível (entrega ultra-rápida sem verificação pesada)
                 message.qos = 0; 
                 client.send(message);
             }
         }
         
-        // VIBRAÇÃO OTIMIZADA (Para feedback tátil)
         function hapticFeedback() {
             if(navigator.vibrate) navigator.vibrate(15);
         }
 
-        // ==========================================
-        // ENGINE V6 PRO: HITBOX MATEMÁTICA & JOYSTICK VIRTUAL
-        // ==========================================
         let dpadCenter = {x: 0, y: 0, radius: 120};
         let actionCenters = {};
         let activeCmds = new Set();
@@ -211,33 +199,30 @@
 
         function updateHitboxes() {
             const dZone = document.getElementById('dpad-zone').getBoundingClientRect();
-            // Centro do D-Pad (Joystick Virtual)
             dpadCenter = { 
                 x: dZone.left + dZone.width / 2, 
                 y: dZone.top + dZone.height / 2, 
-                radius: (dZone.width / 2) + 60 // Área super generosa (110px+) para não perder o dedo
+                radius: (dZone.width / 2) + 60
             };
 
-            // Centro dos botões de ação
             const bY = document.getElementById('btn-Y').getBoundingClientRect();
             const bX = document.getElementById('btn-X').getBoundingClientRect();
             const bB = document.getElementById('btn-B').getBoundingClientRect();
             const bA = document.getElementById('btn-A').getBoundingClientRect();
 
-            const actionRadius = 60; // Raio gigante (o botão tem 32px, mas o sensor terá 60px)
+            const actionRadius = 60;
 
             actionCenters = {
                 'Y': { x: bY.left + bY.width/2, y: bY.top + bY.height/2, r: actionRadius, el: document.getElementById('btn-Y') },
                 'X': { x: bX.left + bX.width/2, y: bX.top + bX.height/2, r: actionRadius, el: document.getElementById('btn-X') },
-                'B': { x: bB.left + bB.width/2, y: bB.top + bB.height/2, r: actionRadius, el: document.getElementById('btn-B'), cmd: 'JUMP' },
-                'A': { x: bA.left + bA.width/2, y: bA.top + bA.height/2, r: actionRadius, el: document.getElementById('btn-A'), cmd: 'JUMP' }
+                'B': { x: bB.left + bB.width/2, y: bB.top + bB.height/2, r: actionRadius, el: document.getElementById('btn-B') },
+                'A': { x: bA.left + bA.width/2, y: bA.top + bA.height/2, r: actionRadius, el: document.getElementById('btn-A') }
             };
         }
 
-        // Atualiza as posições ao carregar e ao girar a tela
         window.addEventListener('load', updateHitboxes);
         window.addEventListener('resize', () => setTimeout(updateHitboxes, 100));
-        setTimeout(updateHitboxes, 500); // Callback de segurança
+        setTimeout(updateHitboxes, 500);
 
         function handleTouchEvents(e) {
             e.preventDefault();
@@ -246,18 +231,16 @@
             let dpadActive = null; 
             let uiUpdates = new Set();
 
-            // 1. Analisa cada dedo na tela simultaneamente
             for (let i = 0; i < e.touches.length; i++) {
                 let tx = e.touches[i].clientX;
                 let ty = e.touches[i].clientY;
 
-                // Checa D-Pad (Joystick Virtual via distância e ângulo)
                 let dx = tx - dpadCenter.x;
                 let dy = ty - dpadCenter.y;
                 let dist = Math.sqrt(dx*dx + dy*dy);
 
                 if (!dpadActive && dist < dpadCenter.radius) {
-                    if (dist > 25) { // Zona Morta central para não acionar à toa
+                    if (dist > 25) {
                         let angle = Math.atan2(dy, dx) * (180 / Math.PI);
                         if (angle < 0) angle += 360;
 
@@ -275,20 +258,17 @@
                     }
                 }
 
-                // Checa Botões de Ação (Sensor circular invisível e estendido)
                 for (let key in actionCenters) {
                     let btn = actionCenters[key];
                     let adx = tx - btn.x;
                     let ady = ty - btn.y;
                     if (Math.sqrt(adx*adx + ady*ady) < btn.r) {
-                        let cmd = btn.cmd || key;
-                        newCmds.add(cmd);
+                        newCmds.add(key);
                         uiUpdates.add('ACT_' + key);
                     }
                 }
             }
 
-            // 2. Atualiza a Interface Visual (Classes 'active') instantaneamente
             Object.values(dpadEls).forEach(el => el.classList.remove('active'));
             Object.values(actionCenters).forEach(btn => btn.el.classList.remove('active'));
 
@@ -297,7 +277,6 @@
                 if (ui.startsWith('ACT_')) actionCenters[ui.split('_')[1]].el.classList.add('active');
             });
 
-            // 3. Envia Comandos de PARADA (Release) PRIMEIRO para evitar inputs presos
             activeCmds.forEach(cmd => {
                 if (!newCmds.has(cmd)) {
                     if (['U', 'D', 'L', 'R'].includes(cmd)) {
@@ -308,7 +287,6 @@
                 }
             });
 
-            // 4. Envia Comandos de AÇÃO (Press) DEPOIS
             newCmds.forEach(cmd => {
                 if (!activeCmds.has(cmd)) {
                     sendCmd(cmd);
@@ -316,11 +294,9 @@
                 }
             });
 
-            // 5. Salva estado atual para o próximo frame
             activeCmds = newCmds;
         }
 
-        // Escuta absolutamente todos os movimentos na tela do celular
         document.addEventListener('touchstart', handleTouchEvents, { passive: false });
         document.addEventListener('touchmove', handleTouchEvents, { passive: false });
         document.addEventListener('touchend', handleTouchEvents, { passive: false });
