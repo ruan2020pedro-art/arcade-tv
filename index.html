@@ -19,73 +19,73 @@
             height: 100vh; 
             width: 100vw;
             box-sizing: border-box;
-            touch-action: none; /* Previne scroll e zoom na tela inteira */
+            touch-action: none;
             user-select: none;
             -webkit-user-select: none;
             overflow: hidden;
             padding: 20px 60px;
         }
         
-        .header { 
-            position: absolute; 
-            top: 15px; 
-            left: 50%; 
-            transform: translateX(-50%);
-            text-align: center; 
-            color: #00e5ff; 
-            font-size: 14px;
-            text-shadow: 1px 1px 0 #000;
-        }
-
-        #status { 
-            position: absolute; 
-            bottom: 10px; 
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 10px; 
-            color: #ffaa00; 
-            max-width: 90%; 
-            word-break: break-all;
-            text-align: center;
-        }
-        
-        /* --- RODAPÉ DE BOTÕES DO SISTEMA --- */
-        .bottom-controls {
+        /* Botões no Topo Central */
+        .top-controls {
             position: absolute;
-            bottom: 40px;
+            top: 15px;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
-            gap: 15px;
+            gap: 10px;
             z-index: 100;
         }
 
         .system-btn {
-            background-color: #333333; /* Cinza escuro */
-            color: #ffffff;
-            border: 2px solid #555555;
-            padding: 12px 20px;
+            background-color: #2a2a2a;
+            color: #fff;
+            border: 1px solid #555;
+            padding: 8px 12px;
             font-family: 'Press Start 2P', cursive;
-            font-size: 11px;
-            border-radius: 5px;
+            font-size: 8px;
+            border-radius: 4px;
             cursor: pointer;
-            box-shadow: 0 4px 0 rgba(0,0,0,0.5);
+            box-shadow: 0 2px 0 rgba(0,0,0,0.5);
             transition: all 0.1s;
         }
 
         .system-btn:active {
-            background-color: #555555;
-            transform: translateY(4px);
+            background-color: #444;
+            transform: translateY(2px);
             box-shadow: none;
         }
 
         .system-btn.disconnected {
             background-color: #e74c3c;
             border-color: #c0392b;
-            color: #fff;
             cursor: not-allowed;
         }
 
+        /* Player ID no Fundo Central */
+        #player-id {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #00e5ff;
+            font-size: 10px;
+            text-align: center;
+            text-shadow: 1px 1px 0 #000;
+        }
+
+        /* Status no Fundo Extremo */
+        #status { 
+            position: absolute; 
+            bottom: 10px; 
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 8px; 
+            color: #ffaa00; 
+            width: 100%;
+            text-align: center;
+        }
+        
         /* --- D-PAD VIRTUAL AVANÇADO (Lado Esquerdo) --- */
         #dpad-zone {
             position: relative;
@@ -161,8 +161,10 @@
 </head>
 <body>
     
-    <div class="header">
-        <div id="player-id">PLAY X</div>
+    <!-- BOTÕES DO SISTEMA NO TOPO -->
+    <div class="top-controls">
+        <button id="btn-menu" class="system-btn">MENU</button>
+        <button id="btn-disconnect" class="system-btn">DESCONECTAR</button>
     </div>
 
     <!-- D-PAD VIRTUAL LADO ESQUERDO -->
@@ -177,20 +179,15 @@
     <div class="action-zone">
         <div class="action-btn" id="btn-Y" data-cmd="Y">Y</div>
         <div class="action-btn" id="btn-X" data-cmd="X">X</div>
-        <div class="action-btn" id="btn-B" data-cmd="JUMP">B</div>
-        <div class="action-btn" id="btn-A" data-cmd="JUMP">A</div>
-    </div>
-
-    <!-- RODAPÉ DE CONTROLE -->
-    <div class="bottom-controls">
-        <button id="btn-menu" class="system-btn">MENU</button>
-        <button id="btn-disconnect" class="system-btn">DESCONECTAR</button>
+        <div class="action-btn" id="btn-B" data-cmd="B">B</div>
+        <div class="action-btn" id="btn-A" data-cmd="A">A</div>
     </div>
     
+    <!-- ID DO JOGADOR E STATUS NO FUNDO -->
+    <div id="player-id">PLAY X</div>
     <div id="status">Conectando...</div>
 
     <script>
-        // CONFIGURAÇÃO MQTT
         const urlParams = new URLSearchParams(window.location.search);
         const roomId = urlParams.get('sala') || "0000";
         const playerId = urlParams.get('jogador') || "1";
@@ -198,13 +195,13 @@
         document.getElementById('player-id').innerText = "PLAY " + playerId;
         const topic = "arcade/game/" + roomId;
         let client;
-        let isConnected = true; 
+        let isConnected = true;
         let pingInterval;
         
         const clientId = "celular_" + playerId + "_" + Math.random().toString(16).substr(2, 6);
         client = new Paho.MQTT.Client("broker.emqx.io", 8084, "/mqtt", clientId);
         
-        // Last Will and Testament (LWT) - Avisa a TV se a aba fechar de repente
+        // LWT: Avisa a TV se a aba fechar
         const willMessage = new Paho.MQTT.Message("P" + playerId + "_DISCONNECTED");
         willMessage.destinationName = topic;
 
@@ -224,7 +221,7 @@
                 document.getElementById('status').style.color = "#2ecc71";
                 sendCmd("CONNECT");
                 
-                // Sinal de Vida (Ping) para a TV saber que o celular está ativo
+                // Sinal de Vida (PING)
                 clearInterval(pingInterval);
                 pingInterval = setInterval(() => {
                     if (isConnected) sendCmd("PING");
@@ -264,29 +261,25 @@
             e.preventDefault();
             if(isConnected) {
                 isConnected = false;
-                sendCmd("DISCONNECTED"); // Avisa a TV antes de fechar
+                sendCmd("DISCONNECTED"); 
                 hapticFeedback();
                 
-                // Muda a interface do celular
                 document.getElementById('player-id').innerText = "DESCONECTADO";
                 document.getElementById('player-id').style.color = "#e74c3c";
-                document.getElementById('status').innerText = "Você saiu da sala. Feche a aba e escaneie o QR Code novamente.";
+                document.getElementById('status').innerText = "Feche a aba e escaneie o QR Code novamente.";
                 document.getElementById('status').style.color = "#e74c3c";
                 
                 const btnDisc = document.getElementById('btn-disconnect');
                 btnDisc.innerText = "SAIU";
                 btnDisc.classList.add('disconnected');
 
-                // Desliga a conexão
                 clearInterval(pingInterval);
-                setTimeout(() => {
-                    client.disconnect();
-                }, 100); // Pequeno delay para garantir o envio da mensagem
+                setTimeout(() => { client.disconnect(); }, 100);
             }
         });
 
         // ==========================================
-        // ENGINE DE TOQUE (HITBOX MATEMÁTICA)
+        // ENGINE DE TOQUE
         // ==========================================
         let dpadCenter = {x: 0, y: 0, radius: 120};
         let actionCenters = {};
@@ -304,7 +297,7 @@
             dpadCenter = { 
                 x: dZone.left + dZone.width / 2, 
                 y: dZone.top + dZone.height / 2, 
-                radius: (dZone.width / 2) + 60 
+                radius: (dZone.width / 2) + 60
             };
 
             const bY = document.getElementById('btn-Y').getBoundingClientRect();
@@ -312,23 +305,28 @@
             const bB = document.getElementById('btn-B').getBoundingClientRect();
             const bA = document.getElementById('btn-A').getBoundingClientRect();
 
-            const actionRadius = 60; 
+            const actionRadius = 60;
 
             actionCenters = {
                 'Y': { x: bY.left + bY.width/2, y: bY.top + bY.height/2, r: actionRadius, el: document.getElementById('btn-Y') },
                 'X': { x: bX.left + bX.width/2, y: bX.top + bX.height/2, r: actionRadius, el: document.getElementById('btn-X') },
-                'B': { x: bB.left + bB.width/2, y: bB.top + bB.height/2, r: actionRadius, el: document.getElementById('btn-B'), cmd: 'JUMP' },
-                'A': { x: bA.left + bA.width/2, y: bA.top + bA.height/2, r: actionRadius, el: document.getElementById('btn-A'), cmd: 'JUMP' }
+                'B': { x: bB.left + bB.width/2, y: bB.top + bB.height/2, r: actionRadius, el: document.getElementById('btn-B') },
+                'A': { x: bA.left + bA.width/2, y: bA.top + bA.height/2, r: actionRadius, el: document.getElementById('btn-A') }
             };
         }
 
         window.addEventListener('load', updateHitboxes);
         window.addEventListener('resize', () => setTimeout(updateHitboxes, 100));
-        setTimeout(updateHitboxes, 500); 
+        setTimeout(updateHitboxes, 500);
 
         function handleTouchEvents(e) {
+            // CORREÇÃO: Se o toque for nos botões do topo, ignora o preventDefault para o clique funcionar
+            if (e.target.closest('.top-controls')) {
+                return; 
+            }
+            
             e.preventDefault();
-            if (!isConnected) return; // Bloqueia toques se estiver desconectado
+            if (!isConnected) return; 
 
             let newCmds = new Set();
             let dpadActive = null; 
@@ -366,8 +364,7 @@
                     let adx = tx - btn.x;
                     let ady = ty - btn.y;
                     if (Math.sqrt(adx*adx + ady*ady) < btn.r) {
-                        let cmd = btn.cmd || key;
-                        newCmds.add(cmd);
+                        newCmds.add(key);
                         uiUpdates.add('ACT_' + key);
                     }
                 }
