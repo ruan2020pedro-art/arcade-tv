@@ -55,195 +55,243 @@
     <div id="status">Conectando...</div>
 
     <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const roomId = urlParams.get('sala') || "0000";
-        const playerId = urlParams.get('jogador') || "1";
-        
-        document.getElementById('player-id').innerText = "PLAY " + playerId;
-        const topic = "arcade/game/" + roomId;
-        let client;
-        let isConnected = true;
-        let pingInterval;
-        
-        const clientId = "celular_" + playerId + "_" + Math.random().toString(16).substr(2, 6);
-        client = new Paho.MQTT.Client("broker.emqx.io", 8084, "/mqtt", clientId);
-        
-        const willMessage = new Paho.MQTT.Message("P" + playerId + "_DISCONNECTED");
-        willMessage.destinationName = topic;
+        document.addEventListener('DOMContentLoaded', () => {
+            // Segurança: Sanitização rigorosa (Anti-Traversal)
+            const urlParams = new URLSearchParams(window.location.search);
+            const rawRoom = urlParams.get('sala') || "0000";
+            const rawPlayer = urlParams.get('jogador');
+            
+            const roomId = rawRoom.replace(/[^a-zA-Z0-9-]/g, '');
+            const playerId = (rawPlayer === "2") ? "2" : "1";
+            
+            document.getElementById('player-id').innerText = "PLAY " + playerId;
+            const topic = "arcade/game/" + roomId;
+            
+            let client;
+            let isConnected = true;
+            let pingInterval;
+            let reconnectDelay = 2000;
+            
+            // Segurança: Geração Criptográfica e Prevenção de Colisões
+            const generateSafeId = () => {
+                if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+                    return crypto.randomUUID();
+                }
+                return Date.now().toString(36) + Math.random().toString(36).substring(2, 10);
+            };
 
-        client.onConnectionLost = (responseObject) => {
-            if (isConnected) {
-                document.getElementById('status').innerText = "Conexão perdida!";
-                document.getElementById('status').style.color = "#e74c3c";
-            }
-        };
-        
-        client.connect({
-            useSSL: true,
-            timeout: 5,
-            willMessage: willMessage,
-            onSuccess: () => {
-                document.getElementById('status').innerText = "Conectado à sala " + roomId;
-                document.getElementById('status').style.color = "#2ecc71";
-                sendCmd("CONNECT");
+            const clientId = "celular_" + playerId + "_" + generateSafeId();
+            
+            function connectMQTT() {
+                if(!isConnected) return; // Se o usuário desconectou manualmente, não reconecta
                 
-                clearInterval(pingInterval);
-                pingInterval = setInterval(() => {
-                    if (isConnected) sendCmd("PING");
-                }, 5000);
-            },
-            onFailure: (err) => {
-                document.getElementById('status').innerText = "Falha na conexão!";
-                document.getElementById('status').style.color = "#e74c3c";
-            }
-        });
-        
-        function sendCmd(cmd) {
-            if(client && client.isConnected() && isConnected) {
-                const message = new Paho.MQTT.Message("P" + playerId + "_" + cmd);
-                message.destinationName = topic;
-                message.qos = 0; 
-                client.send(message);
-            }
-        }
-        
-        function hapticFeedback() {
-            if(navigator.vibrate) navigator.vibrate(15);
-        }
+                client = new Paho.MQTT.Client("broker.emqx.io", 8084, "/mqtt", clientId);
+                
+                // QoS 1 na mensagem de morte para garantir desconexão na TV se a internet cair
+                const willMessage = new Paho.MQTT.Message("P" + playerId + "_DISCONNECTED");
+                willMessage.destinationName = topic;
+                willMessage.qos = 1; 
 
-        document.getElementById('btn-menu').addEventListener('click', (e) => {
-            e.preventDefault();
-            if(isConnected) {
-                sendCmd("MENU");
-                hapticFeedback();
+                client.onConnectionLost = (responseObject) => {
+                    if (isConnected) {
+                        document.getElementById('status').innerText = "Reconectando...";
+                        document.getElementById('status').style.color = "#ffaa00";
+                        reconnectDelay = Math.min(reconnectDelay * 1.5, 30000); // Backoff Exponencial
+                        setTimeout(connectMQTT, reconnectDelay);
+                    }
+                };
+                
+                client.connect({
+                    useSSL: true,
+                    timeout: 5,
+                    willMessage: willMessage,
+                    onSuccess: () => {
+                        reconnectDelay = 2000; // Reseta o delay em caso de sucesso
+                        // Texto solicitado alterado: apenas "Conectado."
+                        document.getElementById('status').innerText = "Conectado.";
+                        document.getElementById('status').style.color = "#2ecc71";
+                        sendCmd("CONNECT", 1); // QoS 1 garante conexão robusta
+                        
+                        clearInterval(pingInterval);
+                        pingInterval = setInterval(() => {
+                            if (isConnected) sendCmd("PING", 0);
+                        }, 5000);
+                    },
+                    onFailure: (err) => {
+                        if (isConnected) {
+                            document.getElementById('status').innerText = "Falha, tentando novamente...";
+                            document.getElementById('status').style.color = "#e74c3c";
+                            reconnectDelay = Math.min(reconnectDelay * 1.5, 30000);
+                            setTimeout(connectMQTT, reconnectDelay);
+                        }
+                    }
+                });
             }
-        });
 
-        // CORREÇÃO: Envia a mensagem ANTES de mudar o status isConnected
-        document.getElementById('btn-disconnect').addEventListener('click', (e) => {
-            e.preventDefault();
-            if(isConnected) {
-                // Envia com QoS 1 para garantir a entrega
-                if(client && client.isConnected()) {
-                    const message = new Paho.MQTT.Message("P" + playerId + "_DISCONNECTED");
+            // Inicia conexão
+            connectMQTT();
+            
+            // QoS paramétrico: 0 (Fast Fire), 1 (Garantia de Entrega)
+            function sendCmd(cmd, qos = 0) {
+                if(client && client.isConnected() && isConnected) {
+                    const message = new Paho.MQTT.Message("P" + playerId + "_" + cmd);
                     message.destinationName = topic;
-                    message.qos = 1; // Garante que o broker receba
+                    message.qos = qos; 
                     client.send(message);
                 }
-
-                isConnected = false;
-                hapticFeedback();
-                
-                document.getElementById('player-id').innerText = "DESCONECTADO";
-                document.getElementById('player-id').style.color = "#e74c3c";
-                document.getElementById('status').innerText = "Feche a aba e escaneie o QR Code novamente.";
-                document.getElementById('status').style.color = "#e74c3c";
-                
-                const btnDisc = document.getElementById('btn-disconnect');
-                btnDisc.innerText = "SAIU";
-                btnDisc.classList.add('disconnected');
-
-                clearInterval(pingInterval);
-                // Aumentado para 500ms para dar tempo do pacote MQTT sair
-                setTimeout(() => { client.disconnect(); }, 500);
             }
-        });
+            
+            function hapticFeedback() {
+                if(navigator.vibrate) navigator.vibrate(15);
+            }
 
-        let dpadCenter = {x: 0, y: 0, radius: 120};
-        let actionCenters = {};
-        let activeCmds = new Set();
-        
-        let dpadEls = {
-            'U': document.getElementById('dpad-up'),
-            'D': document.getElementById('dpad-down'),
-            'L': document.getElementById('dpad-left'),
-            'R': document.getElementById('dpad-right')
-        };
+            document.getElementById('btn-menu').addEventListener('click', (e) => {
+                e.preventDefault();
+                if(isConnected) {
+                    sendCmd("MENU", 1);
+                    hapticFeedback();
+                }
+            });
 
-        function updateHitboxes() {
-            const dZone = document.getElementById('dpad-zone').getBoundingClientRect();
-            dpadCenter = { x: dZone.left + dZone.width / 2, y: dZone.top + dZone.height / 2, radius: (dZone.width / 2) + 60 };
-            const bY = document.getElementById('btn-Y').getBoundingClientRect();
-            const bX = document.getElementById('btn-X').getBoundingClientRect();
-            const bB = document.getElementById('btn-B').getBoundingClientRect();
-            const bA = document.getElementById('btn-A').getBoundingClientRect();
-            const actionRadius = 60;
-            actionCenters = {
-                'Y': { x: bY.left + bY.width/2, y: bY.top + bY.height/2, r: actionRadius, el: document.getElementById('btn-Y') },
-                'X': { x: bX.left + bX.width/2, y: bX.top + bX.height/2, r: actionRadius, el: document.getElementById('btn-X') },
-                'B': { x: bB.left + bB.width/2, y: bB.top + bB.height/2, r: actionRadius, el: document.getElementById('btn-B') },
-                'A': { x: bA.left + bA.width/2, y: bA.top + bA.height/2, r: actionRadius, el: document.getElementById('btn-A') }
+            document.getElementById('btn-disconnect').addEventListener('click', (e) => {
+                e.preventDefault();
+                if(isConnected) {
+                    // Envia com QoS 1 antes de derrubar o estado
+                    sendCmd("DISCONNECTED", 1);
+                    isConnected = false;
+                    hapticFeedback();
+                    
+                    document.getElementById('player-id').innerText = "DESCONECTADO";
+                    document.getElementById('player-id').style.color = "#e74c3c";
+                    document.getElementById('status').innerText = "Feche a aba e escaneie o QR Code novamente.";
+                    document.getElementById('status').style.color = "#e74c3c";
+                    
+                    const btnDisc = document.getElementById('btn-disconnect');
+                    btnDisc.innerText = "SAIU";
+                    btnDisc.classList.add('disconnected');
+
+                    clearInterval(pingInterval);
+                    setTimeout(() => { client.disconnect(); }, 500);
+                }
+            });
+
+            let dpadCenter = {x: 0, y: 0, radius: 120};
+            let actionCenters = {};
+            let activeCmds = new Set();
+            
+            let dpadEls = {
+                'U': document.getElementById('dpad-up'),
+                'D': document.getElementById('dpad-down'),
+                'L': document.getElementById('dpad-left'),
+                'R': document.getElementById('dpad-right')
             };
-        }
 
-        window.addEventListener('load', updateHitboxes);
-        window.addEventListener('resize', () => setTimeout(updateHitboxes, 100));
-        setTimeout(updateHitboxes, 500);
+            // Hitboxes escaláveis
+            function updateHitboxes() {
+                const dZone = document.getElementById('dpad-zone').getBoundingClientRect();
+                dpadCenter = { x: dZone.left + dZone.width / 2, y: dZone.top + dZone.height / 2, radius: (dZone.width / 2) + 60 };
+                
+                const actionRadius = 60;
+                ['Y', 'X', 'B', 'A'].forEach(btnKey => {
+                    const el = document.getElementById('btn-' + btnKey);
+                    if(el) {
+                        const rect = el.getBoundingClientRect();
+                        actionCenters[btnKey] = { x: rect.left + rect.width/2, y: rect.top + rect.height/2, r: actionRadius, el: el };
+                    }
+                });
+            }
 
-        function handleTouchEvents(e) {
-            if (e.target.closest('.top-controls')) return; 
-            e.preventDefault();
-            if (!isConnected) return; 
+            // Engine nativa de renderização (Performance substituta para setTimeouts soltos)
+            const resizeObserver = new ResizeObserver(() => {
+                updateHitboxes();
+            });
+            resizeObserver.observe(document.body);
+            updateHitboxes(); // Chamada inicial
 
-            let newCmds = new Set();
-            let dpadActive = null; 
-            let uiUpdates = new Set();
+            function handleTouchEvents(e) {
+                if (e.target.closest('.top-controls')) return; 
+                e.preventDefault();
+                if (!isConnected) return; 
 
-            for (let i = 0; i < e.touches.length; i++) {
-                let tx = e.touches[i].clientX;
-                let ty = e.touches[i].clientY;
-                let dx = tx - dpadCenter.x;
-                let dy = ty - dpadCenter.y;
-                let dist = Math.sqrt(dx*dx + dy*dy);
+                let newCmds = new Set();
+                let dpadActive = null; 
+                let uiUpdates = new Set();
 
-                if (!dpadActive && dist < dpadCenter.radius) {
-                    if (dist > 25) { 
-                        let angle = Math.atan2(dy, dx) * (180 / Math.PI);
-                        if (angle < 0) angle += 360;
-                        let dir = null;
-                        if (angle >= 315 || angle < 45) dir = 'R';
-                        else if (angle >= 45 && angle < 135) dir = 'D';
-                        else if (angle >= 135 && angle < 225) dir = 'L';
-                        else if (angle >= 225 && angle < 315) dir = 'U';
-                        if (dir) { dpadActive = dir; newCmds.add(dir); uiUpdates.add('DPAD_' + dir); }
+                for (let i = 0; i < e.touches.length; i++) {
+                    let tx = e.touches[i].clientX;
+                    let ty = e.touches[i].clientY;
+                    
+                    // Cálculo DPAD
+                    let dx = tx - dpadCenter.x;
+                    let dy = ty - dpadCenter.y;
+                    let dist = Math.sqrt(dx*dx + dy*dy);
+
+                    if (!dpadActive && dist < dpadCenter.radius) {
+                        if (dist > 25) { 
+                            let angle = Math.atan2(dy, dx) * (180 / Math.PI);
+                            if (angle < 0) angle += 360;
+                            let dir = null;
+                            if (angle >= 315 || angle < 45) dir = 'R';
+                            else if (angle >= 45 && angle < 135) dir = 'D';
+                            else if (angle >= 135 && angle < 225) dir = 'L';
+                            else if (angle >= 225 && angle < 315) dir = 'U';
+                            if (dir) { dpadActive = dir; newCmds.add(dir); uiUpdates.add('DPAD_' + dir); }
+                        }
+                    }
+
+                    // Cálculo Ações
+                    for (let key in actionCenters) {
+                        let btn = actionCenters[key];
+                        let adx = tx - btn.x;
+                        let ady = ty - btn.y;
+                        if (Math.sqrt(adx*adx + ady*ady) < btn.r) { newCmds.add(key); uiUpdates.add('ACT_' + key); }
                     }
                 }
 
-                for (let key in actionCenters) {
-                    let btn = actionCenters[key];
-                    let adx = tx - btn.x;
-                    let ady = ty - btn.y;
-                    if (Math.sqrt(adx*adx + ady*ady) < btn.r) { newCmds.add(key); uiUpdates.add('ACT_' + key); }
+                // Reset visual
+                Object.values(dpadEls).forEach(el => el.classList.remove('active'));
+                Object.values(actionCenters).forEach(btn => btn.el.classList.remove('active'));
+
+                // Atualização visual
+                uiUpdates.forEach(ui => {
+                    if (ui.startsWith('DPAD_')) dpadEls[ui.split('_')[1]].classList.add('active');
+                    if (ui.startsWith('ACT_')) actionCenters[ui.split('_')[1]].el.classList.add('active');
+                });
+
+                // Comparação de estado e Correção do Stuttering
+                let oldHasDpad = [...activeCmds].some(c => ['U', 'D', 'L', 'R'].includes(c));
+                let newHasDpad = [...newCmds].some(c => ['U', 'D', 'L', 'R'].includes(c));
+
+                // Apenas dispara STOP se largou completamente o D-pad
+                if (oldHasDpad && !newHasDpad) {
+                    sendCmd('STOP', 1); // Garante a entrega via QoS 1
                 }
+
+                activeCmds.forEach(cmd => {
+                    if (!newCmds.has(cmd)) {
+                        // Desaperto de ações puras
+                        if (!['U', 'D', 'L', 'R'].includes(cmd)) {
+                            sendCmd(cmd + '_RELEASE', 1); // QoS 1
+                        }
+                    }
+                });
+
+                newCmds.forEach(cmd => {
+                    if (!activeCmds.has(cmd)) { 
+                        sendCmd(cmd, 0); // Disparos normais são rápidos (0)
+                        hapticFeedback(); 
+                    }
+                });
+
+                activeCmds = newCmds;
             }
 
-            Object.values(dpadEls).forEach(el => el.classList.remove('active'));
-            Object.values(actionCenters).forEach(btn => btn.el.classList.remove('active'));
-
-            uiUpdates.forEach(ui => {
-                if (ui.startsWith('DPAD_')) dpadEls[ui.split('_')[1]].classList.add('active');
-                if (ui.startsWith('ACT_')) actionCenters[ui.split('_')[1]].el.classList.add('active');
-            });
-
-            activeCmds.forEach(cmd => {
-                if (!newCmds.has(cmd)) {
-                    if (['U', 'D', 'L', 'R'].includes(cmd)) sendCmd('STOP');
-                    else sendCmd(cmd + '_RELEASE');
-                }
-            });
-
-            newCmds.forEach(cmd => {
-                if (!activeCmds.has(cmd)) { sendCmd(cmd); hapticFeedback(); }
-            });
-
-            activeCmds = newCmds;
-        }
-
-        document.addEventListener('touchstart', handleTouchEvents, { passive: false });
-        document.addEventListener('touchmove', handleTouchEvents, { passive: false });
-        document.addEventListener('touchend', handleTouchEvents, { passive: false });
-        document.addEventListener('touchcancel', handleTouchEvents, { passive: false });
-        document.addEventListener('contextmenu', event => event.preventDefault());
+            document.addEventListener('touchstart', handleTouchEvents, { passive: false });
+            document.addEventListener('touchmove', handleTouchEvents, { passive: false });
+            document.addEventListener('touchend', handleTouchEvents, { passive: false });
+            document.addEventListener('touchcancel', handleTouchEvents, { passive: false });
+            document.addEventListener('contextmenu', event => event.preventDefault());
+        });
     </script>
 </body>
 </html>
