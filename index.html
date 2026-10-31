@@ -226,11 +226,10 @@
             });
 
             activeCmds.forEach(cmd => {
-                if (!newCmds.has(cmd)) {
-                    if (['U', 'D', 'L', 'R'].includes(cmd)) sendCmd('STOP');
-                    else sendCmd(cmd + '_RELEASE');
-                }
-            });
+    if (!newCmds.has(cmd)) {
+        sendCmd(cmd + '_RELEASE');
+    }
+});
 
             newCmds.forEach(cmd => {
                 if (!activeCmds.has(cmd)) { sendCmd(cmd); hapticFeedback(); }
