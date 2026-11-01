@@ -92,6 +92,8 @@
                 
                 client = new Paho.MQTT.Client("broker.emqx.io", 8084, "/mqtt", clientId);
                 
+                // Will message: usada APENAS quando a conexão cai sem disconnect() gracioso.
+                // Cobre: rede caiu, aba fechada, celular dormiu, crash do browser.
                 const willMessage = new Paho.MQTT.Message("P" + playerId + "_DISCONNECTED");
                 willMessage.destinationName = topic;
                 willMessage.qos = 1; 
@@ -154,7 +156,9 @@
             document.getElementById('btn-disconnect').addEventListener('click', (e) => {
                 e.preventDefault();
                 if(isConnected) {
-                    sendCmd("DISCONNECTED", 1);
+                    // ★ MUDANÇA 1: envia EXIT (em vez de DISCONNECTED)
+                    // para a TV distinguir "usuário pediu saída" de "rede caiu"
+                    sendCmd("EXIT", 1);
                     isConnected = false;
                     hapticFeedback();
                     
@@ -167,7 +171,10 @@
                     btnDisc.classList.add('disconnected');
 
                     clearInterval(pingInterval);
-                    setTimeout(() => { client.disconnect(); }, 500);
+                    // ★ MUDANÇA 2: 1500ms (era 500ms)
+                    // Garante entrega do P1_EXIT antes do disconnect() gracioso
+                    // (que cancelaria a will message P1_DISCONNECTED)
+                    setTimeout(() => { client.disconnect(); }, 1500);
                 }
             });
 
@@ -227,7 +234,7 @@
                         stickVisualX = Math.cos(angle) * visualDist;
                         stickVisualY = Math.sin(angle) * visualDist;
 
-                        // MATEMÁTICA ATUALIZADA: 8 Direções (Diagonais)
+                        // 8 Direções (Diagonais)
                         if (dist > 25) { 
                             let angleDeg = angle * (180 / Math.PI);
                             if (angleDeg < 0) angleDeg += 360;
@@ -273,7 +280,7 @@
                     if (ui.startsWith('ACT_')) actionCenters[ui.split('_')[1]].el.classList.add('active');
                 });
 
-                // CORREÇÃO DO THUMB ROLLING
+                // Thumb rolling: libera direções que saíram da zona
                 let oldHasDpad = [...activeCmds].some(c => ['U', 'D', 'L', 'R'].includes(c));
                 let newHasDpad = [...newCmds].some(c => ['U', 'D', 'L', 'R'].includes(c));
 
@@ -281,7 +288,6 @@
 
                 activeCmds.forEach(cmd => {
                     if (!newCmds.has(cmd)) { 
-                        // Libera o envio de RELEASE direcional se o dedo mudou de zona sem sair do direcional
                         if (!['U', 'D', 'L', 'R'].includes(cmd) || newHasDpad) {
                             sendCmd(cmd + '_RELEASE', 1);
                         }
