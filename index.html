@@ -45,23 +45,13 @@
 
     <div class="top-controls">
         <div id="btn-menu" class="system-btn">
-            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="3" y1="12" x2="21" y2="12"></line>
-                <line x1="3" y1="6" x2="21" y2="6"></line>
-                <line x1="3" y1="18" x2="21" y2="18"></line>
-            </svg>
+            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
         </div>
         <div id="btn-pause" class="system-btn">
-            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="6" y="4" width="4" height="16"></rect>
-                <rect x="14" y="4" width="4" height="16"></rect>
-            </svg>
+            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
         </div>
         <div id="btn-disconnect" class="system-btn">
-            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
-                <line x1="12" y1="2" x2="12" y2="12"></line>
-            </svg>
+            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
         </div>
     </div>
 
@@ -91,11 +81,7 @@
             document.getElementById('player-id').innerText = "PLAY " + playerId;
             const topic = "arcade/game/" + roomId;
             
-            let client;
-            let isConnected = true;
-            let pingInterval;
-            let reconnectDelay = 2000;
-            let forceClosed = false; 
+            let client, isConnected = true, pingInterval, reconnectDelay = 2000, forceClosed = false; 
             
             const generateSafeId = () => {
                 if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
@@ -108,47 +94,45 @@
                 if(!isConnected || forceClosed) return; 
                 
                 client = new Paho.MQTT.Client("broker.emqx.io", 8084, "/mqtt", clientId);
-                
                 const willMessage = new Paho.MQTT.Message("P" + playerId + "_DISCONNECTED");
-                willMessage.destinationName = topic;
-                willMessage.qos = 0; 
-                willMessage.retained = false;
+                willMessage.destinationName = topic; willMessage.qos = 0; willMessage.retained = false;
 
                 client.onMessageArrived = (message) => {
-                    if (message.payloadString === "SYS_TV_OFFLINE") triggerFatalDisconnect();
+                    const payload = message.payloadString;
+                    if (payload === "SYS_TV_OFFLINE") {
+                        triggerFatalDisconnect();
+                        return;
+                    }
+                    // Responde ao Ping da TV devolvendo o timestamp recebido
+                    if (payload.startsWith("SYS_PING_P" + playerId + "_")) {
+                        const timestamp = payload.split("_")[3];
+                        sendCmd("PONG_" + timestamp, 0);
+                    }
                 };
 
                 client.onConnectionLost = (responseObject) => {
                     if (isConnected && !forceClosed) {
-                        document.getElementById('status').innerText = "Reconectando...";
-                        document.getElementById('status').style.color = "#ffaa00";
+                        document.getElementById('status').innerText = "Reconectando..."; document.getElementById('status').style.color = "#ffaa00";
                         reconnectDelay = Math.min(reconnectDelay * 1.5, 30000);
                         setTimeout(connectMQTT, reconnectDelay);
                     }
                 };
                 
                 client.connect({
-                    useSSL: true,
-                    timeout: 5,
-                    willMessage: willMessage,
+                    useSSL: true, timeout: 5, willMessage: willMessage,
                     onSuccess: () => {
                         if (forceClosed) { client.disconnect(); return; }
-                        reconnectDelay = 2000; 
-                        client.subscribe(topic); 
+                        reconnectDelay = 2000; client.subscribe(topic); 
                         
-                        document.getElementById('status').innerText = "Conectado.";
-                        document.getElementById('status').style.color = "#2ecc71";
+                        document.getElementById('status').innerText = "Conectado."; document.getElementById('status').style.color = "#2ecc71";
                         sendCmd("CONNECT", 1); 
                         
                         clearInterval(pingInterval);
-                        pingInterval = setInterval(() => {
-                            if (isConnected && !forceClosed) sendCmd("PING", 0);
-                        }, 5000);
+                        pingInterval = setInterval(() => { if (isConnected && !forceClosed) sendCmd("PING", 0); }, 5000);
                     },
                     onFailure: (err) => {
                         if (isConnected && !forceClosed) {
-                            document.getElementById('status').innerText = "Falha, tentando novamente...";
-                            document.getElementById('status').style.color = "#e74c3c";
+                            document.getElementById('status').innerText = "Falha, tentando novamente..."; document.getElementById('status').style.color = "#e74c3c";
                             reconnectDelay = Math.min(reconnectDelay * 1.5, 30000);
                             setTimeout(connectMQTT, reconnectDelay);
                         }
@@ -161,15 +145,11 @@
             function sendCmd(cmd, qos = 0) {
                 if(client && client.isConnected() && isConnected && !forceClosed) {
                     const message = new Paho.MQTT.Message("P" + playerId + "_" + cmd);
-                    message.destinationName = topic;
-                    message.qos = qos; 
-                    client.send(message);
+                    message.destinationName = topic; message.qos = qos; client.send(message);
                 }
             }
             
-            function hapticFeedback() {
-                if(navigator.vibrate) navigator.vibrate(15);
-            }
+            function hapticFeedback() { if(navigator.vibrate) navigator.vibrate(15); }
 
             function triggerFatalDisconnect() {
                 isConnected = false; forceClosed = true; clearInterval(pingInterval);
@@ -180,40 +160,21 @@
                 document.getElementById('btn-disconnect').classList.add('disconnected');
             }
 
-            document.getElementById('btn-menu').addEventListener('click', (e) => {
-                e.preventDefault();
-                if(isConnected && !forceClosed) { sendCmd("MENU", 1); hapticFeedback(); }
-            });
-
-            document.getElementById('btn-pause').addEventListener('click', (e) => {
-                e.preventDefault();
-                if(isConnected && !forceClosed) { sendCmd("PAUSE", 1); hapticFeedback(); }
-            });
-
+            document.getElementById('btn-menu').addEventListener('click', (e) => { e.preventDefault(); if(isConnected && !forceClosed) { sendCmd("MENU", 1); hapticFeedback(); } });
+            document.getElementById('btn-pause').addEventListener('click', (e) => { e.preventDefault(); if(isConnected && !forceClosed) { sendCmd("PAUSE", 1); hapticFeedback(); } });
             document.getElementById('btn-disconnect').addEventListener('click', (e) => {
                 e.preventDefault();
                 if(isConnected && !forceClosed) {
-                    sendCmd("EXIT", 1); // ENVIA EXIT EM VEZ DE DISCONNECTED
-                    isConnected = false;
-                    forceClosed = true;
-                    hapticFeedback();
-                    
-                    document.getElementById('player-id').innerText = "DESCONECTADO";
-                    document.getElementById('player-id').style.color = "#e74c3c";
-                    document.getElementById('status').innerText = "Feche a aba e escaneie o QR Code novamente.";
-                    document.getElementById('status').style.color = "#e74c3c";
-                    
-                    const btnDisc = document.getElementById('btn-disconnect');
-                    btnDisc.classList.add('disconnected');
-
+                    sendCmd("EXIT", 1); isConnected = false; forceClosed = true; hapticFeedback();
+                    document.getElementById('player-id').innerText = "DESCONECTADO"; document.getElementById('player-id').style.color = "#e74c3c";
+                    document.getElementById('status').innerText = "Feche a aba e escaneie o QR Code novamente."; document.getElementById('status').style.color = "#e74c3c";
+                    document.getElementById('btn-disconnect').classList.add('disconnected');
                     clearInterval(pingInterval);
                     setTimeout(() => { if (client && client.isConnected()) client.disconnect(); }, 500);
                 }
             });
 
-            let dpadCenter = {x: 0, y: 0, radius: 110};
-            let actionCenters = {};
-            let activeCmds = new Set();
+            let dpadCenter = {x: 0, y: 0, radius: 110}, actionCenters = {}, activeCmds = new Set();
             const stickEl = document.getElementById('joystick-stick');
             
             function updateHitboxes() {
@@ -223,26 +184,19 @@
                 const actionRadius = 55;
                 ['Y', 'X', 'B', 'A'].forEach(btnKey => {
                     const el = document.getElementById('btn-' + btnKey);
-                    if(el) {
-                        const rect = el.getBoundingClientRect();
-                        actionCenters[btnKey] = { x: rect.left + rect.width/2, y: rect.top + rect.height/2, r: actionRadius, el: el };
-                    }
+                    if(el) { const rect = el.getBoundingClientRect(); actionCenters[btnKey] = { x: rect.left + rect.width/2, y: rect.top + rect.height/2, r: actionRadius, el: el }; }
                 });
             }
 
             const resizeObserver = new ResizeObserver(() => updateHitboxes());
-            resizeObserver.observe(document.body);
-            updateHitboxes();
+            resizeObserver.observe(document.body); updateHitboxes();
 
             function handleTouchEvents(e) {
                 if (e.target.closest('.top-controls')) return; 
                 e.preventDefault();
                 if (!isConnected || forceClosed) return; 
 
-                let newCmds = new Set();
-                let isJoystickActive = false;
-                let stickVisualX = 0, stickVisualY = 0;
-                let uiUpdates = new Set();
+                let newCmds = new Set(), isJoystickActive = false, stickVisualX = 0, stickVisualY = 0, uiUpdates = new Set();
 
                 for (let i = 0; i < e.touches.length; i++) {
                     let tx = e.touches[i].clientX, ty = e.touches[i].clientY;
@@ -250,14 +204,11 @@
 
                     if (!isJoystickActive && dist < dpadCenter.radius + 50) {
                         isJoystickActive = true;
-                        let angle = Math.atan2(dy, dx);
-                        let maxVisualTravel = 110 - 35, visualDist = Math.min(dist, maxVisualTravel);
-                        
+                        let angle = Math.atan2(dy, dx), maxVisualTravel = 110 - 35, visualDist = Math.min(dist, maxVisualTravel);
                         stickVisualX = Math.cos(angle) * visualDist; stickVisualY = Math.sin(angle) * visualDist;
 
                         if (dist > 25) { 
-                            let angleDeg = angle * (180 / Math.PI);
-                            if (angleDeg < 0) angleDeg += 360;
+                            let angleDeg = angle * (180 / Math.PI); if (angleDeg < 0) angleDeg += 360;
                             
                             if (angleDeg >= 337.5 || angleDeg < 22.5) { newCmds.add('R'); } 
                             else if (angleDeg >= 22.5 && angleDeg < 67.5) { newCmds.add('D'); newCmds.add('R'); } 
@@ -271,17 +222,14 @@
                     }
 
                     for (let key in actionCenters) {
-                        let btn = actionCenters[key];
-                        let adx = tx - btn.x, ady = ty - btn.y;
+                        let btn = actionCenters[key], adx = tx - btn.x, ady = ty - btn.y;
                         if (Math.sqrt(adx*adx + ady*ady) < btn.r) { newCmds.add(key); uiUpdates.add('ACT_' + key); }
                     }
                 }
 
                 if (isJoystickActive) {
                     stickEl.style.transition = 'none'; stickEl.style.transform = `translate(${stickVisualX}px, ${stickVisualY}px)`;
-                } else {
-                    stickEl.style.transition = 'transform 0.15s ease-out'; stickEl.style.transform = `translate(0px, 0px)`;
-                }
+                } else { stickEl.style.transition = 'transform 0.15s ease-out'; stickEl.style.transform = `translate(0px, 0px)`; }
 
                 Object.values(actionCenters).forEach(btn => btn.el.classList.remove('active'));
                 uiUpdates.forEach(ui => { if (ui.startsWith('ACT_')) actionCenters[ui.split('_')[1]].el.classList.add('active'); });
@@ -291,12 +239,7 @@
 
                 if (oldHasDpad && !newHasDpad) sendCmd('STOP', 1);
 
-                activeCmds.forEach(cmd => {
-                    if (!newCmds.has(cmd)) { 
-                        if (!['U', 'D', 'L', 'R'].includes(cmd) || newHasDpad) { sendCmd(cmd + '_RELEASE', 1); }
-                    }
-                });
-
+                activeCmds.forEach(cmd => { if (!newCmds.has(cmd)) { if (!['U', 'D', 'L', 'R'].includes(cmd) || newHasDpad) { sendCmd(cmd + '_RELEASE', 1); } } });
                 newCmds.forEach(cmd => { if (!activeCmds.has(cmd)) { sendCmd(cmd, 0); hapticFeedback(); } });
                 activeCmds = newCmds;
             }
