@@ -18,7 +18,7 @@
         .system-btn:active svg { opacity: 1; filter: drop-shadow(0 0 5px #fff); }
         .system-btn.disconnected { background-color: #e74c3c; border-color: #c0392b; cursor: not-allowed; }
         
-        #player-id { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); color: #00e5ff; font-size: 10px; text-align: center; text-shadow: 1px 1px 0 #000; pointer-events: none; }
+        #player-id { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); color: #00e5ff; font-size: 10px; text-align: center; text-shadow: 1px 1px 0 #000; pointer-events: none; transition: color 0.3s; }
         
         #joystick-base { position: relative; width: 220px; height: 220px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.15); background: radial-gradient(circle, rgba(40,40,40,0.3) 0%, rgba(20,20,20,0.8) 100%); display: flex; justify-content: center; align-items: center; box-shadow: inset 0 0 30px rgba(0,0,0,0.8); }
         #joystick-stick { width: 70px; height: 70px; border-radius: 50%; background: #fff; box-shadow: 0 0 20px rgba(255, 255, 255, 0.6), inset -5px -5px 10px rgba(0,0,0,0.2); position: absolute; z-index: 10; pointer-events: none; will-change: transform; }
@@ -30,9 +30,20 @@
         #btn-X { left: 0; top: 80px; background: #3498db; text-shadow: 2px 2px 0 #1f618d; }
         #btn-B { right: 0; top: 80px; background: #e74c3c; text-shadow: 2px 2px 0 #922b21; }
         #btn-A { bottom: 0; left: 80px; background: #2ecc71; text-shadow: 2px 2px 0 #1d8348; }
+
+        /* Overlay vermelho fatal de desconexão da TV */
+        .fatal-error-overlay { display: none; position: absolute; top:0; left:0; width:100vw; height:100vh; background: rgba(180, 0, 0, 0.95); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; box-sizing: border-box; }
+        .fatal-error-overlay h1 { font-size: 22px; margin-bottom: 20px; color: #fff; text-shadow: 2px 2px 0 #000; }
+        .fatal-error-overlay p { font-size: 11px; line-height: 1.6; max-width: 400px; color: #f8b800; font-family: 'Work Sans', sans-serif; font-weight: 600; }
     </style>
 </head>
 <body>
+    
+    <div id="fatal-overlay" class="fatal-error-overlay">
+        <h1>CONEXÃO PERDIDA</h1>
+        <p>A ligação com a TV foi encerrada inesperadamente.<br><br>Por favor, feche esta aba e volte a ler o QR Code no ecrã da TV para jogar novamente.</p>
+    </div>
+
     <div class="top-controls">
         <div id="btn-menu" class="system-btn">
             <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -85,6 +96,7 @@
             let isConnected = true;
             let pingInterval;
             let reconnectDelay = 2000;
+            let forceClosed = false; 
             
             const generateSafeId = () => {
                 if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
@@ -94,16 +106,25 @@
             const clientId = "celular_" + playerId + "_" + generateSafeId();
             
             function connectMQTT() {
-                if(!isConnected) return; 
+                if(!isConnected || forceClosed) return; 
                 
                 client = new Paho.MQTT.Client("broker.emqx.io", 8084, "/mqtt", clientId);
                 
+                // QoS 0 para alinhar com a TV e evitar spams fantasmas na sessão
                 const willMessage = new Paho.MQTT.Message("P" + playerId + "_DISCONNECTED");
                 willMessage.destinationName = topic;
-                willMessage.qos = 1; 
+                willMessage.qos = 0; 
+                willMessage.retained = false;
+
+                // NOVA FUNÇÃO: Ouvir comandos vitais da TV
+                client.onMessageArrived = (message) => {
+                    if (message.payloadString === "SYS_TV_OFFLINE") {
+                        triggerFatalDisconnect();
+                    }
+                };
 
                 client.onConnectionLost = (responseObject) => {
-                    if (isConnected) {
+                    if (isConnected && !forceClosed) {
                         document.getElementById('status').innerText = "Reconectando...";
                         document.getElementById('status').style.color = "#ffaa00";
                         reconnectDelay = Math.min(reconnectDelay * 1.5, 30000);
@@ -116,18 +137,21 @@
                     timeout: 5,
                     willMessage: willMessage,
                     onSuccess: () => {
+                        if (forceClosed) { client.disconnect(); return; }
                         reconnectDelay = 2000; 
+                        client.subscribe(topic); // Assinar o canal para ouvir o testamento da TV
+                        
                         document.getElementById('status').innerText = "Conectado.";
                         document.getElementById('status').style.color = "#2ecc71";
                         sendCmd("CONNECT", 1); 
                         
                         clearInterval(pingInterval);
                         pingInterval = setInterval(() => {
-                            if (isConnected) sendCmd("PING", 0);
+                            if (isConnected && !forceClosed) sendCmd("PING", 0);
                         }, 5000);
                     },
                     onFailure: (err) => {
-                        if (isConnected) {
+                        if (isConnected && !forceClosed) {
                             document.getElementById('status').innerText = "Falha, tentando novamente...";
                             document.getElementById('status').style.color = "#e74c3c";
                             reconnectDelay = Math.min(reconnectDelay * 1.5, 30000);
@@ -140,7 +164,7 @@
             connectMQTT();
             
             function sendCmd(cmd, qos = 0) {
-                if(client && client.isConnected() && isConnected) {
+                if(client && client.isConnected() && isConnected && !forceClosed) {
                     const message = new Paho.MQTT.Message("P" + playerId + "_" + cmd);
                     message.destinationName = topic;
                     message.qos = qos; 
@@ -152,21 +176,35 @@
                 if(navigator.vibrate) navigator.vibrate(15);
             }
 
+            // Função para matar a sessão caso a TV suma (corte de luz, F5 forçado, etc)
+            function triggerFatalDisconnect() {
+                isConnected = false;
+                forceClosed = true;
+                clearInterval(pingInterval);
+                if (client && client.isConnected()) client.disconnect();
+                
+                document.getElementById('fatal-overlay').style.display = 'flex';
+                document.getElementById('player-id').innerText = "TV DESLIGADA";
+                document.getElementById('player-id').style.color = "#e74c3c";
+                document.getElementById('btn-disconnect').classList.add('disconnected');
+            }
+
             document.getElementById('btn-menu').addEventListener('click', (e) => {
                 e.preventDefault();
-                if(isConnected) { sendCmd("MENU", 1); hapticFeedback(); }
+                if(isConnected && !forceClosed) { sendCmd("MENU", 1); hapticFeedback(); }
             });
 
             document.getElementById('btn-pause').addEventListener('click', (e) => {
                 e.preventDefault();
-                if(isConnected) { sendCmd("PAUSE", 1); hapticFeedback(); }
+                if(isConnected && !forceClosed) { sendCmd("PAUSE", 1); hapticFeedback(); }
             });
 
             document.getElementById('btn-disconnect').addEventListener('click', (e) => {
                 e.preventDefault();
-                if(isConnected) {
+                if(isConnected && !forceClosed) {
                     sendCmd("DISCONNECTED", 1);
                     isConnected = false;
+                    forceClosed = true;
                     hapticFeedback();
                     
                     document.getElementById('player-id').innerText = "DESCONECTADO";
@@ -178,7 +216,7 @@
                     btnDisc.classList.add('disconnected');
 
                     clearInterval(pingInterval);
-                    setTimeout(() => { client.disconnect(); }, 500);
+                    setTimeout(() => { if (client && client.isConnected()) client.disconnect(); }, 500);
                 }
             });
 
@@ -212,7 +250,7 @@
             function handleTouchEvents(e) {
                 if (e.target.closest('.top-controls')) return; 
                 e.preventDefault();
-                if (!isConnected) return; 
+                if (!isConnected || forceClosed) return; 
 
                 let newCmds = new Set();
                 let isJoystickActive = false;
@@ -238,7 +276,6 @@
                         stickVisualX = Math.cos(angle) * visualDist;
                         stickVisualY = Math.sin(angle) * visualDist;
 
-                        // MATEMÁTICA ATUALIZADA: 8 Direções (Diagonais)
                         if (dist > 25) { 
                             let angleDeg = angle * (180 / Math.PI);
                             if (angleDeg < 0) angleDeg += 360;
@@ -284,7 +321,6 @@
                     if (ui.startsWith('ACT_')) actionCenters[ui.split('_')[1]].el.classList.add('active');
                 });
 
-                // CORREÇÃO DO THUMB ROLLING
                 let oldHasDpad = [...activeCmds].some(c => ['U', 'D', 'L', 'R'].includes(c));
                 let newHasDpad = [...newCmds].some(c => ['U', 'D', 'L', 'R'].includes(c));
 
@@ -292,7 +328,6 @@
 
                 activeCmds.forEach(cmd => {
                     if (!newCmds.has(cmd)) { 
-                        // Libera o envio de RELEASE direcional se o dedo mudou de zona sem sair do direcional
                         if (!['U', 'D', 'L', 'R'].includes(cmd) || newHasDpad) {
                             sendCmd(cmd + '_RELEASE', 1);
                         }
