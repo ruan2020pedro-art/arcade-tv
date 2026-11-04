@@ -13,7 +13,6 @@
         .header { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); text-align: center; color: #00e5ff; font-size: 14px; text-shadow: 1px 1px 0 #000; }
         #status { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); font-size: 10px; color: #ffaa00; max-width: 90%; word-break: break-all; text-align: center; pointer-events: none; transition: color 0.3s; }
         
-        /* BARRA SUPERIOR E BOTÃO DE PERFIL */
         .top-controls { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; z-index: 100; align-items: center; }
         .system-btn { width: 44px; height: 44px; border-radius: 50%; background-color: #2a2a2a; color: #fff; border: 1px solid #555; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 4px 0 rgba(0,0,0,0.5); transition: all 0.1s; }
         .system-btn svg { width: 20px; height: 20px; opacity: 0.8; }
@@ -22,7 +21,6 @@
         .system-btn.disconnected { background-color: #e74c3c; border-color: #c0392b; cursor: not-allowed; }
         
         #btn-profile { font-size: 22px; font-family: sans-serif; border: 2px solid #00e5ff; background-color: #1a1a1a; padding-bottom: 2px; }
-        
         #player-id { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); color: #00e5ff; font-size: 10px; text-align: center; text-shadow: 1px 1px 0 #000; pointer-events: none; transition: color 0.3s; }
         
         #joystick-base { position: relative; width: 220px; height: 220px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.15); background: radial-gradient(circle, rgba(40,40,40,0.3) 0%, rgba(20,20,20,0.8) 100%); display: flex; justify-content: center; align-items: center; box-shadow: inset 0 0 30px rgba(0,0,0,0.8); }
@@ -31,32 +29,18 @@
         .action-zone { position: relative; width: 240px; height: 240px; }
         .action-btn { position: absolute; width: 80px; height: 80px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 26px; color: white; font-family: 'Press Start 2P', cursive; border: none; box-shadow: 0 5px 0 rgba(0,0,0,0.6), inset 0 5px 10px rgba(255,255,255,0.2); transition: transform 0.05s ease, box-shadow 0.05s ease, filter 0.05s; }
         .action-btn.active { transform: translateY(5px) scale(0.96); box-shadow: 0 0 20px rgba(255,255,255,0.5); filter: brightness(1.3); }
-        #btn-Y { top: 0; left: 80px; background: #e67e22; text-shadow: 2px 2px 0 #a04000; }
-        #btn-X { left: 0; top: 80px; background: #3498db; text-shadow: 2px 2px 0 #1f618d; }
-        #btn-B { right: 0; top: 80px; background: #e74c3c; text-shadow: 2px 2px 0 #922b21; }
-        #btn-A { bottom: 0; left: 80px; background: #2ecc71; text-shadow: 2px 2px 0 #1d8348; }
+        #btn-Y { top: 0; left: 80px; background: #e67e22; text-shadow: 2px 2px 0 #a04000; } #btn-X { left: 0; top: 80px; background: #3498db; text-shadow: 2px 2px 0 #1f618d; } #btn-B { right: 0; top: 80px; background: #e74c3c; text-shadow: 2px 2px 0 #922b21; } #btn-A { bottom: 0; left: 80px; background: #2ecc71; text-shadow: 2px 2px 0 #1d8348; }
 
-        /* ================= OVERLAY E POP-UP DE LOGIN ================= */
         #login-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.85); z-index: 9000; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
         .login-card { background-color: #121212; border-radius: 35px; padding: 40px 30px; width: 85%; max-width: 320px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 15px 40px rgba(0,0,0,0.7); position: relative; }
-        
-        /* Avatar Clicável */
         .avatar-btn { width: 60px; height: 60px; border-radius: 50%; background: #222; border: 3px solid #8c52ff; display: flex; justify-content: center; align-items: center; font-size: 32px; cursor: pointer; margin-bottom: 20px; transition: transform 0.2s; user-select: none; font-family: sans-serif; }
         .avatar-btn:active { transform: scale(0.9); }
-        
         .login-title { font-family: 'Press Start 2P', cursive; font-size: 20px; color: #00e5ff; margin-bottom: 30px; letter-spacing: 2px; }
-        
-        /* Input Ciano */
         .login-input { width: 100%; background-color: #00e5ff; border: none; border-radius: 12px; padding: 18px 15px; font-family: 'Work Sans', sans-serif; font-size: 16px; color: #000; text-align: left; box-sizing: border-box; margin-bottom: 25px; outline: none; font-weight: 500; text-transform: uppercase; }
         .login-input::placeholder { color: rgba(0,0,0,0.6); font-weight: 500; text-transform: none; }
-        
         .login-info { font-family: 'Work Sans', sans-serif; font-size: 12px; color: #fff; text-align: center; line-height: 1.5; margin-bottom: 30px; padding: 0 10px; }
-        
-        /* Botão Roxo */
         .btn-confirm-login { background-color: #8c52ff; border: none; border-radius: 12px; padding: 18px 30px; font-family: 'Press Start 2P', cursive; font-size: 13px; color: #000; cursor: pointer; transition: transform 0.2s, filter 0.2s; width: 100%; box-sizing: border-box; letter-spacing: 1px; }
         .btn-confirm-login:active { transform: scale(0.96); filter: brightness(1.2); }
-        
-        /* Seletor de Emojis */
         #emoji-selector { display: none; position: absolute; top: 100px; background: #1f1f2e; border-radius: 15px; padding: 15px; gap: 15px; flex-wrap: wrap; justify-content: center; width: 220px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 10; border: 2px solid #444; }
         .emoji-option { font-size: 26px; cursor: pointer; padding: 5px; transition: transform 0.2s; font-family: sans-serif; }
         .emoji-option:active { transform: scale(1.3); }
@@ -68,25 +52,17 @@
 </head>
 <body>
     
-    <!-- POP-UP DE LOGIN / PERFIL -->
     <div id="login-overlay">
         <div class="login-card">
             <div class="avatar-btn" id="avatar-trigger">👽</div>
             <div id="emoji-selector">
-                <div class="emoji-option">👽</div>
-                <div class="emoji-option">👾</div>
-                <div class="emoji-option">👻</div>
-                <div class="emoji-option">🤖</div>
-                <div class="emoji-option">🦊</div>
-                <div class="emoji-option">🍄</div>
-                <div class="emoji-option">💀</div>
-                <div class="emoji-option">🐱</div>
+                <div class="emoji-option">👽</div><div class="emoji-option">👾</div><div class="emoji-option">👻</div><div class="emoji-option">🤖</div>
+                <div class="emoji-option">🦊</div><div class="emoji-option">🍄</div><div class="emoji-option">💀</div><div class="emoji-option">🐱</div>
             </div>
             
             <div class="login-title" id="login-title">PLAYER X</div>
             <input type="text" class="login-input" id="player-name-input" maxlength="8" placeholder="Digite seu nome" autocomplete="off">
             <p class="login-info">Suas pontuações são armazenadas automaticamente neste navegador.</p>
-            
             <button class="btn-confirm-login" id="btn-confirm-login">Confirmar</button>
         </div>
     </div>
@@ -106,10 +82,8 @@
     <div id="joystick-base"><div id="joystick-stick"></div></div>
     
     <div class="action-zone">
-        <div class="action-btn" id="btn-Y" data-cmd="Y">Y</div>
-        <div class="action-btn" id="btn-X" data-cmd="X">X</div>
-        <div class="action-btn" id="btn-B" data-cmd="B">B</div>
-        <div class="action-btn" id="btn-A" data-cmd="A">A</div>
+        <div class="action-btn" id="btn-Y" data-cmd="Y">Y</div><div class="action-btn" id="btn-X" data-cmd="X">X</div>
+        <div class="action-btn" id="btn-B" data-cmd="B">B</div><div class="action-btn" id="btn-A" data-cmd="A">A</div>
     </div>
     
     <div id="player-id">PLAY X</div>
@@ -122,16 +96,16 @@
             const playerId = (urlParams.get('jogador') === "2") ? "2" : "1";
             const roomId = rawRoom.replace(/[^a-zA-Z0-9-]/g, '');
             
-            // Definições visuais por Player
-            const playerColor = playerId === "1" ? "#00e5ff" : "#be2edd"; // Ciano ou Magenta
+            const playerColor = playerId === "1" ? "#00e5ff" : "#be2edd";
             document.getElementById('player-id').innerText = "PLAY " + playerId;
             document.getElementById('login-title').innerText = "PLAYER " + playerId;
             document.getElementById('login-title').style.color = playerColor;
             document.getElementById('btn-profile').style.borderColor = playerColor;
             
-            // --- GESTÃO DE PERFIL (LOCAL STORAGE) ---
+            // --- GESTÃO DE PERFIL E MEMORY CARD (LOCAL STORAGE) ---
             let currentName = localStorage.getItem('arcade_player_name') || "";
             let currentEmoji = localStorage.getItem('arcade_player_emoji') || "👽";
+            let mySaves = JSON.parse(localStorage.getItem('arcade_saves')) || {};
             
             const overlay = document.getElementById('login-overlay');
             const nameInput = document.getElementById('player-name-input');
@@ -139,39 +113,16 @@
             const emojiSelector = document.getElementById('emoji-selector');
             const btnProfile = document.getElementById('btn-profile');
             
-            // Inicializa a UI com os dados salvos
-            avatarTrigger.innerText = currentEmoji;
-            btnProfile.innerText = currentEmoji;
-            nameInput.value = currentName;
-
-            // Mostra o pop-up APENAS se não houver nome salvo
+            avatarTrigger.innerText = currentEmoji; btnProfile.innerText = currentEmoji; nameInput.value = currentName;
             if (!currentName) { overlay.style.display = 'flex'; }
 
-            // Abrir pop-up ao clicar no avatar do controle
-            btnProfile.addEventListener('click', (e) => { 
-                e.preventDefault(); 
-                nameInput.value = currentName; 
-                avatarTrigger.innerText = currentEmoji;
-                overlay.style.display = 'flex'; 
-            });
+            btnProfile.addEventListener('click', (e) => { e.preventDefault(); nameInput.value = currentName; avatarTrigger.innerText = currentEmoji; overlay.style.display = 'flex'; });
+            avatarTrigger.addEventListener('click', () => { emojiSelector.style.display = emojiSelector.style.display === 'flex' ? 'none' : 'flex'; });
+            document.querySelectorAll('.emoji-option').forEach(el => { el.addEventListener('click', (e) => { currentEmoji = e.target.innerText; avatarTrigger.innerText = currentEmoji; emojiSelector.style.display = 'none'; }); });
 
-            // Seletor de Emojis
-            avatarTrigger.addEventListener('click', () => {
-                emojiSelector.style.display = emojiSelector.style.display === 'flex' ? 'none' : 'flex';
-            });
-
-            document.querySelectorAll('.emoji-option').forEach(el => {
-                el.addEventListener('click', (e) => {
-                    currentEmoji = e.target.innerText;
-                    avatarTrigger.innerText = currentEmoji;
-                    emojiSelector.style.display = 'none';
-                });
-            });
-
-            // Confirmar Login
             document.getElementById('btn-confirm-login').addEventListener('click', () => {
                 let typedName = nameInput.value.trim().toUpperCase();
-                if (!typedName) typedName = "P" + playerId; // Fallback se deixar vazio
+                if (!typedName) typedName = "P" + playerId;
                 
                 currentName = typedName;
                 localStorage.setItem('arcade_player_name', currentName);
@@ -180,29 +131,20 @@
                 btnProfile.innerText = currentEmoji;
                 overlay.style.display = 'none';
                 
-                // Envia imediatamente o nome atualizado para a TV se já estiver conectado
                 if (isConnected && !forceClosed) {
                     sendCmd("PROFILE:" + currentName, 1, true); 
+                    sendCmd("SAVE_SYNC:" + JSON.stringify(mySaves), 1, true);
                 }
             });
-            // ------------------------------------------
 
             const topic = "arcade/game/" + roomId;
             const clientId = "celular_" + playerId + "_" + Date.now().toString(36);
-            
             let client, isConnected = true, pingInterval, reconnectDelay = 2000, forceClosed = false; 
             
-            // --- WEBRTC GESTÃO ---
             const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] };
             let pc = null, dataChannel = null, useWebRTC = false;
             
-            function sendWebRTCSignal(data) {
-                if(client && client.isConnected()) {
-                    const message = new Paho.MQTT.Message(`RTC_SIG_P${playerId}_` + JSON.stringify(data));
-                    message.destinationName = topic; message.qos = 0; client.send(message);
-                }
-            }
-            // ---------------------
+            function sendWebRTCSignal(data) { if(client && client.isConnected()) { const message = new Paho.MQTT.Message(`RTC_SIG_P${playerId}_` + JSON.stringify(data)); message.destinationName = topic; message.qos = 0; client.send(message); } }
 
             function connectMQTT() {
                 if(!isConnected || forceClosed) return; 
@@ -213,45 +155,36 @@
                     const payload = message.payloadString;
                     if (payload === "SYS_TV_OFFLINE") { triggerFatalDisconnect(); return; }
                     
+                    if (payload.startsWith("SYS_SAVE_UPDATE_P" + playerId + ":")) {
+                        const dataStr = payload.substring(19); 
+                        const firstColon = dataStr.indexOf(':');
+                        if (firstColon > -1) {
+                            const gameId = dataStr.substring(0, firstColon);
+                            const saveJson = dataStr.substring(firstColon + 1);
+                            try { mySaves[gameId] = JSON.parse(saveJson); localStorage.setItem('arcade_saves', JSON.stringify(mySaves)); } catch(e) {}
+                        }
+                        return;
+                    }
+                    
                     if (payload.startsWith(`RTC_SIG_P${playerId}_`)) {
                         const data = JSON.parse(payload.substring(11));
                         if (data.type === 'offer') {
-                            if (pc) pc.close();
-                            pc = new RTCPeerConnection(rtcConfig);
+                            if (pc) pc.close(); pc = new RTCPeerConnection(rtcConfig);
                             pc.onicecandidate = e => { if(e.candidate) sendWebRTCSignal({type: 'candidate', candidate: e.candidate}); };
                             pc.ondatachannel = e => {
                                 dataChannel = e.channel;
-                                dataChannel.onopen = () => { 
-                                    useWebRTC = true; 
-                                    document.getElementById('status').innerText = "Conectado (P2P Rápido)";
-                                    document.getElementById('status').style.color = "#00e5ff"; 
-                                };
-                                dataChannel.onclose = () => { 
-                                    useWebRTC = false; 
-                                    document.getElementById('status').innerText = "Conectado (Nuvem MQTT)";
-                                    document.getElementById('status').style.color = "#2ecc71"; 
-                                };
-                                dataChannel.onmessage = e => {
-                                    if (e.data === "SYS_TV_OFFLINE") triggerFatalDisconnect();
-                                    else if (e.data.startsWith("SYS_PING_P" + playerId + "_")) sendCmd("PONG_" + e.data.split("_")[3], 0);
-                                };
+                                dataChannel.onopen = () => { useWebRTC = true; document.getElementById('status').innerText = "Conectado (P2P Rápido)"; document.getElementById('status').style.color = "#00e5ff"; };
+                                dataChannel.onclose = () => { useWebRTC = false; document.getElementById('status').innerText = "Conectado (Nuvem MQTT)"; document.getElementById('status').style.color = "#2ecc71"; };
+                                dataChannel.onmessage = e => { if (e.data === "SYS_TV_OFFLINE") triggerFatalDisconnect(); else if (e.data.startsWith("SYS_PING_P" + playerId + "_")) sendCmd("PONG_" + e.data.split("_")[3], 0); };
                             };
-                            
-                            pc.setRemoteDescription(new RTCSessionDescription(data.offer)).then(() => pc.createAnswer())
-                              .then(answer => pc.setLocalDescription(answer).then(() => answer))
-                              .then(answer => sendWebRTCSignal({type: 'answer', answer: answer}));
+                            pc.setRemoteDescription(new RTCSessionDescription(data.offer)).then(() => pc.createAnswer()).then(answer => pc.setLocalDescription(answer).then(() => answer)).then(answer => sendWebRTCSignal({type: 'answer', answer: answer}));
                         } else if (data.type === 'candidate' && pc) { pc.addIceCandidate(new RTCIceCandidate(data.candidate)); }
                         return;
                     }
                     if (payload.startsWith("SYS_PING_P" + playerId + "_")) sendCmd("PONG_" + payload.split("_")[3], 0);
                 };
 
-                client.onConnectionLost = () => {
-                    if (isConnected && !forceClosed) {
-                        document.getElementById('status').innerText = "Reconectando..."; document.getElementById('status').style.color = "#ffaa00";
-                        reconnectDelay = Math.min(reconnectDelay * 1.5, 30000); setTimeout(connectMQTT, reconnectDelay);
-                    }
-                };
+                client.onConnectionLost = () => { if (isConnected && !forceClosed) { document.getElementById('status').innerText = "Reconectando..."; document.getElementById('status').style.color = "#ffaa00"; reconnectDelay = Math.min(reconnectDelay * 1.5, 30000); setTimeout(connectMQTT, reconnectDelay); } };
                 
                 client.connect({
                     useSSL: true, timeout: 5, willMessage: willMessage,
@@ -261,41 +194,22 @@
                         document.getElementById('status').innerText = "Conectado (Nuvem MQTT)"; document.getElementById('status').style.color = "#2ecc71";
                         sendCmd("CONNECT", 1, true); 
                         
-                        // Após conectar, se já houver nome salvo, envia para a TV
-                        if (currentName) { sendCmd("PROFILE:" + currentName, 1, true); }
+                        if (currentName) { 
+                            sendCmd("PROFILE:" + currentName, 1, true); 
+                            sendCmd("SAVE_SYNC:" + JSON.stringify(mySaves), 1, true);
+                        }
 
                         clearInterval(pingInterval); pingInterval = setInterval(() => { if (isConnected && !forceClosed) sendCmd("PING", 0); }, 5000);
                     },
-                    onFailure: () => {
-                        if (isConnected && !forceClosed) {
-                            document.getElementById('status').innerText = "Falha, tentando novamente..."; document.getElementById('status').style.color = "#e74c3c";
-                            reconnectDelay = Math.min(reconnectDelay * 1.5, 30000); setTimeout(connectMQTT, reconnectDelay);
-                        }
-                    }
+                    onFailure: () => { if (isConnected && !forceClosed) { document.getElementById('status').innerText = "Falha, tentando novamente..."; document.getElementById('status').style.color = "#e74c3c"; reconnectDelay = Math.min(reconnectDelay * 1.5, 30000); setTimeout(connectMQTT, reconnectDelay); } }
                 });
             }
 
             connectMQTT();
             
-            function sendCmd(cmd, qos = 0, forceMQTT = false) {
-                const fullCmd = "P" + playerId + "_" + cmd;
-                if (useWebRTC && dataChannel && dataChannel.readyState === 'open' && !forceMQTT) {
-                    dataChannel.send(fullCmd); 
-                } else if(client && client.isConnected() && isConnected && !forceClosed) {
-                    const message = new Paho.MQTT.Message(fullCmd);
-                    message.destinationName = topic; message.qos = qos; client.send(message); 
-                }
-            }
-            
+            function sendCmd(cmd, qos = 0, forceMQTT = false) { const fullCmd = "P" + playerId + "_" + cmd; if (useWebRTC && dataChannel && dataChannel.readyState === 'open' && !forceMQTT) { dataChannel.send(fullCmd); } else if(client && client.isConnected() && isConnected && !forceClosed) { const message = new Paho.MQTT.Message(fullCmd); message.destinationName = topic; message.qos = qos; client.send(message); } }
             function hapticFeedback() { if(navigator.vibrate) navigator.vibrate(15); }
-
-            function triggerFatalDisconnect() {
-                isConnected = false; forceClosed = true; clearInterval(pingInterval);
-                if (pc) pc.close(); if (client && client.isConnected()) client.disconnect();
-                document.getElementById('fatal-overlay').style.display = 'flex';
-                document.getElementById('player-id').innerText = "TV DESLIGADA"; document.getElementById('player-id').style.color = "#e74c3c";
-                document.getElementById('btn-disconnect').classList.add('disconnected');
-            }
+            function triggerFatalDisconnect() { isConnected = false; forceClosed = true; clearInterval(pingInterval); if (pc) pc.close(); if (client && client.isConnected()) client.disconnect(); document.getElementById('fatal-overlay').style.display = 'flex'; document.getElementById('player-id').innerText = "TV DESLIGADA"; document.getElementById('player-id').style.color = "#e74c3c"; document.getElementById('btn-disconnect').classList.add('disconnected'); }
 
             document.getElementById('btn-menu').addEventListener('click', (e) => { e.preventDefault(); if(isConnected && !forceClosed) { sendCmd("MENU", 1); hapticFeedback(); } });
             document.getElementById('btn-pause').addEventListener('click', (e) => { e.preventDefault(); if(isConnected && !forceClosed) { sendCmd("PAUSE", 1); hapticFeedback(); } });
@@ -303,12 +217,8 @@
                 e.preventDefault();
                 if(isConnected && !forceClosed) {
                     sendCmd("EXIT", 1); isConnected = false; forceClosed = true; hapticFeedback();
-                    document.getElementById('player-id').innerText = "DESCONECTADO"; document.getElementById('player-id').style.color = "#e74c3c";
-                    document.getElementById('status').innerText = "Feche a aba e escaneie o QR Code novamente."; document.getElementById('status').style.color = "#e74c3c";
-                    document.getElementById('btn-disconnect').classList.add('disconnected');
-                    clearInterval(pingInterval);
-                    if (pc) pc.close();
-                    setTimeout(() => { if (client && client.isConnected()) client.disconnect(); }, 500);
+                    document.getElementById('player-id').innerText = "DESCONECTADO"; document.getElementById('player-id').style.color = "#e74c3c"; document.getElementById('status').innerText = "Feche a aba e escaneie o QR Code novamente."; document.getElementById('status').style.color = "#e74c3c"; document.getElementById('btn-disconnect').classList.add('disconnected');
+                    clearInterval(pingInterval); if (pc) pc.close(); setTimeout(() => { if (client && client.isConnected()) client.disconnect(); }, 500);
                 }
             });
 
@@ -319,24 +229,18 @@
                 const dZone = document.getElementById('joystick-base').getBoundingClientRect();
                 dpadCenter = { x: dZone.left + dZone.width / 2, y: dZone.top + dZone.height / 2, radius: dZone.width / 2 };
                 const actionRadius = 55;
-                ['Y', 'X', 'B', 'A'].forEach(btnKey => {
-                    const el = document.getElementById('btn-' + btnKey);
-                    if(el) { const rect = el.getBoundingClientRect(); actionCenters[btnKey] = { x: rect.left + rect.width/2, y: rect.top + rect.height/2, r: actionRadius, el: el }; }
-                });
+                ['Y', 'X', 'B', 'A'].forEach(btnKey => { const el = document.getElementById('btn-' + btnKey); if(el) { const rect = el.getBoundingClientRect(); actionCenters[btnKey] = { x: rect.left + rect.width/2, y: rect.top + rect.height/2, r: actionRadius, el: el }; } });
             }
 
-            const resizeObserver = new ResizeObserver(() => updateHitboxes());
-            resizeObserver.observe(document.body); updateHitboxes();
+            const resizeObserver = new ResizeObserver(() => updateHitboxes()); resizeObserver.observe(document.body); updateHitboxes();
 
             function handleTouchEvents(e) {
                 if (e.target.closest('.top-controls') || e.target.closest('#login-overlay')) return; 
-                e.preventDefault();
-                if (!isConnected || forceClosed) return; 
+                e.preventDefault(); if (!isConnected || forceClosed) return; 
 
                 let newCmds = new Set(), isJoystickActive = false, stickVisualX = 0, stickVisualY = 0, uiUpdates = new Set();
                 for (let i = 0; i < e.touches.length; i++) {
-                    let tx = e.touches[i].clientX, ty = e.touches[i].clientY;
-                    let dx = tx - dpadCenter.x, dy = ty - dpadCenter.y, dist = Math.sqrt(dx*dx + dy*dy);
+                    let tx = e.touches[i].clientX, ty = e.touches[i].clientY, dx = tx - dpadCenter.x, dy = ty - dpadCenter.y, dist = Math.sqrt(dx*dx + dy*dy);
 
                     if (!isJoystickActive && dist < dpadCenter.radius + 50) {
                         isJoystickActive = true;
@@ -345,31 +249,16 @@
 
                         if (dist > 25) { 
                             let angleDeg = angle * (180 / Math.PI); if (angleDeg < 0) angleDeg += 360;
-                            if (angleDeg >= 337.5 || angleDeg < 22.5) { newCmds.add('R'); } 
-                            else if (angleDeg >= 22.5 && angleDeg < 67.5) { newCmds.add('D'); newCmds.add('R'); } 
-                            else if (angleDeg >= 67.5 && angleDeg < 112.5) { newCmds.add('D'); } 
-                            else if (angleDeg >= 112.5 && angleDeg < 157.5) { newCmds.add('D'); newCmds.add('L'); } 
-                            else if (angleDeg >= 157.5 && angleDeg < 202.5) { newCmds.add('L'); } 
-                            else if (angleDeg >= 202.5 && angleDeg < 247.5) { newCmds.add('U'); newCmds.add('L'); } 
-                            else if (angleDeg >= 247.5 && angleDeg < 292.5) { newCmds.add('U'); } 
-                            else if (angleDeg >= 292.5 && angleDeg < 337.5) { newCmds.add('U'); newCmds.add('R'); }
+                            if (angleDeg >= 337.5 || angleDeg < 22.5) { newCmds.add('R'); } else if (angleDeg >= 22.5 && angleDeg < 67.5) { newCmds.add('D'); newCmds.add('R'); } else if (angleDeg >= 67.5 && angleDeg < 112.5) { newCmds.add('D'); } else if (angleDeg >= 112.5 && angleDeg < 157.5) { newCmds.add('D'); newCmds.add('L'); } else if (angleDeg >= 157.5 && angleDeg < 202.5) { newCmds.add('L'); } else if (angleDeg >= 202.5 && angleDeg < 247.5) { newCmds.add('U'); newCmds.add('L'); } else if (angleDeg >= 247.5 && angleDeg < 292.5) { newCmds.add('U'); } else if (angleDeg >= 292.5 && angleDeg < 337.5) { newCmds.add('U'); newCmds.add('R'); }
                         }
                     }
-
-                    for (let key in actionCenters) {
-                        let btn = actionCenters[key], adx = tx - btn.x, ady = ty - btn.y;
-                        if (Math.sqrt(adx*adx + ady*ady) < btn.r) { newCmds.add(key); uiUpdates.add('ACT_' + key); }
-                    }
+                    for (let key in actionCenters) { let btn = actionCenters[key], adx = tx - btn.x, ady = ty - btn.y; if (Math.sqrt(adx*adx + ady*ady) < btn.r) { newCmds.add(key); uiUpdates.add('ACT_' + key); } }
                 }
 
-                if (isJoystickActive) { stickEl.style.transition = 'none'; stickEl.style.transform = `translate(${stickVisualX}px, ${stickVisualY}px)`; } 
-                else { stickEl.style.transition = 'transform 0.15s ease-out'; stickEl.style.transform = `translate(0px, 0px)`; }
+                if (isJoystickActive) { stickEl.style.transition = 'none'; stickEl.style.transform = `translate(${stickVisualX}px, ${stickVisualY}px)`; } else { stickEl.style.transition = 'transform 0.15s ease-out'; stickEl.style.transform = `translate(0px, 0px)`; }
+                Object.values(actionCenters).forEach(btn => btn.el.classList.remove('active')); uiUpdates.forEach(ui => { if (ui.startsWith('ACT_')) actionCenters[ui.split('_')[1]].el.classList.add('active'); });
 
-                Object.values(actionCenters).forEach(btn => btn.el.classList.remove('active'));
-                uiUpdates.forEach(ui => { if (ui.startsWith('ACT_')) actionCenters[ui.split('_')[1]].el.classList.add('active'); });
-
-                let oldHasDpad = [...activeCmds].some(c => ['U', 'D', 'L', 'R'].includes(c));
-                let newHasDpad = [...newCmds].some(c => ['U', 'D', 'L', 'R'].includes(c));
+                let oldHasDpad = [...activeCmds].some(c => ['U', 'D', 'L', 'R'].includes(c)), newHasDpad = [...newCmds].some(c => ['U', 'D', 'L', 'R'].includes(c));
                 if (oldHasDpad && !newHasDpad) sendCmd('STOP', 1);
 
                 activeCmds.forEach(cmd => { if (!newCmds.has(cmd)) { if (!['U', 'D', 'L', 'R'].includes(cmd) || newHasDpad) { sendCmd(cmd + '_RELEASE', 1); } } });
@@ -377,11 +266,7 @@
                 activeCmds = newCmds;
             }
 
-            document.addEventListener('touchstart', handleTouchEvents, { passive: false });
-            document.addEventListener('touchmove', handleTouchEvents, { passive: false });
-            document.addEventListener('touchend', handleTouchEvents, { passive: false });
-            document.addEventListener('touchcancel', handleTouchEvents, { passive: false });
-            document.addEventListener('contextmenu', event => event.preventDefault());
+            document.addEventListener('touchstart', handleTouchEvents, { passive: false }); document.addEventListener('touchmove', handleTouchEvents, { passive: false }); document.addEventListener('touchend', handleTouchEvents, { passive: false }); document.addEventListener('touchcancel', handleTouchEvents, { passive: false }); document.addEventListener('contextmenu', event => event.preventDefault());
         });
     </script>
 </body>
