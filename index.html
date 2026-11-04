@@ -132,7 +132,8 @@
                 overlay.style.display = 'none';
                 
                 if (isConnected && !forceClosed) {
-                    sendCmd("PROFILE:" + currentName, 1, true); 
+                    // NOVO: Envia para a TV o nome e o emoji juntos separados por '|'
+                    sendCmd("PROFILE:" + currentName + "|" + currentEmoji, 1, true); 
                     sendCmd("SAVE_SYNC:" + JSON.stringify(mySaves), 1, true);
                 }
             });
@@ -195,7 +196,8 @@
                         sendCmd("CONNECT", 1, true); 
                         
                         if (currentName) { 
-                            sendCmd("PROFILE:" + currentName, 1, true); 
+                            // NOVO: Envia para a TV o nome e o emoji juntos na reconexão automática
+                            sendCmd("PROFILE:" + currentName + "|" + currentEmoji, 1, true); 
                             sendCmd("SAVE_SYNC:" + JSON.stringify(mySaves), 1, true);
                         }
 
