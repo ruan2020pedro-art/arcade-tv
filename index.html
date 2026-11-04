@@ -6,17 +6,22 @@
     <title>Arcade Controller Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         body { background-color: #0d0d0d; color: #fff; font-family: 'Press Start 2P', cursive; margin: 0; padding: 0; display: flex; flex-direction: row; align-items: center; justify-content: space-between; height: 100vh; width: 100vw; box-sizing: border-box; touch-action: none; user-select: none; -webkit-user-select: none; overflow: hidden; padding: 20px 60px; }
+        
         .header { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); text-align: center; color: #00e5ff; font-size: 14px; text-shadow: 1px 1px 0 #000; }
         #status { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); font-size: 10px; color: #ffaa00; max-width: 90%; word-break: break-all; text-align: center; pointer-events: none; transition: color 0.3s; }
         
-        .top-controls { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; z-index: 100; }
+        /* BARRA SUPERIOR E BOTÃO DE PERFIL */
+        .top-controls { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; z-index: 100; align-items: center; }
         .system-btn { width: 44px; height: 44px; border-radius: 50%; background-color: #2a2a2a; color: #fff; border: 1px solid #555; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 4px 0 rgba(0,0,0,0.5); transition: all 0.1s; }
         .system-btn svg { width: 20px; height: 20px; opacity: 0.8; }
         .system-btn:active { background-color: #444; transform: translateY(4px); box-shadow: none; }
         .system-btn:active svg { opacity: 1; filter: drop-shadow(0 0 5px #fff); }
         .system-btn.disconnected { background-color: #e74c3c; border-color: #c0392b; cursor: not-allowed; }
+        
+        #btn-profile { font-size: 22px; font-family: sans-serif; border: 2px solid #00e5ff; background-color: #1a1a1a; padding-bottom: 2px; }
         
         #player-id { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); color: #00e5ff; font-size: 10px; text-align: center; text-shadow: 1px 1px 0 #000; pointer-events: none; transition: color 0.3s; }
         
@@ -31,6 +36,31 @@
         #btn-B { right: 0; top: 80px; background: #e74c3c; text-shadow: 2px 2px 0 #922b21; }
         #btn-A { bottom: 0; left: 80px; background: #2ecc71; text-shadow: 2px 2px 0 #1d8348; }
 
+        /* ================= OVERLAY E POP-UP DE LOGIN ================= */
+        #login-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.85); z-index: 9000; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
+        .login-card { background-color: #121212; border-radius: 35px; padding: 40px 30px; width: 85%; max-width: 320px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 15px 40px rgba(0,0,0,0.7); position: relative; }
+        
+        /* Avatar Clicável */
+        .avatar-btn { width: 60px; height: 60px; border-radius: 50%; background: #222; border: 3px solid #8c52ff; display: flex; justify-content: center; align-items: center; font-size: 32px; cursor: pointer; margin-bottom: 20px; transition: transform 0.2s; user-select: none; font-family: sans-serif; }
+        .avatar-btn:active { transform: scale(0.9); }
+        
+        .login-title { font-family: 'Press Start 2P', cursive; font-size: 20px; color: #00e5ff; margin-bottom: 30px; letter-spacing: 2px; }
+        
+        /* Input Ciano */
+        .login-input { width: 100%; background-color: #00e5ff; border: none; border-radius: 12px; padding: 18px 15px; font-family: 'Work Sans', sans-serif; font-size: 16px; color: #000; text-align: left; box-sizing: border-box; margin-bottom: 25px; outline: none; font-weight: 500; text-transform: uppercase; }
+        .login-input::placeholder { color: rgba(0,0,0,0.6); font-weight: 500; text-transform: none; }
+        
+        .login-info { font-family: 'Work Sans', sans-serif; font-size: 12px; color: #fff; text-align: center; line-height: 1.5; margin-bottom: 30px; padding: 0 10px; }
+        
+        /* Botão Roxo */
+        .btn-confirm-login { background-color: #8c52ff; border: none; border-radius: 12px; padding: 18px 30px; font-family: 'Press Start 2P', cursive; font-size: 13px; color: #000; cursor: pointer; transition: transform 0.2s, filter 0.2s; width: 100%; box-sizing: border-box; letter-spacing: 1px; }
+        .btn-confirm-login:active { transform: scale(0.96); filter: brightness(1.2); }
+        
+        /* Seletor de Emojis */
+        #emoji-selector { display: none; position: absolute; top: 100px; background: #1f1f2e; border-radius: 15px; padding: 15px; gap: 15px; flex-wrap: wrap; justify-content: center; width: 220px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 10; border: 2px solid #444; }
+        .emoji-option { font-size: 26px; cursor: pointer; padding: 5px; transition: transform 0.2s; font-family: sans-serif; }
+        .emoji-option:active { transform: scale(1.3); }
+
         .fatal-error-overlay { display: none; position: absolute; top:0; left:0; width:100vw; height:100vh; background: rgba(180, 0, 0, 0.95); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; box-sizing: border-box; }
         .fatal-error-overlay h1 { font-size: 22px; margin-bottom: 20px; color: #fff; text-shadow: 2px 2px 0 #000; }
         .fatal-error-overlay p { font-size: 11px; line-height: 1.6; max-width: 400px; color: #f8b800; font-family: 'Work Sans', sans-serif; font-weight: 600; }
@@ -38,12 +68,36 @@
 </head>
 <body>
     
+    <!-- POP-UP DE LOGIN / PERFIL -->
+    <div id="login-overlay">
+        <div class="login-card">
+            <div class="avatar-btn" id="avatar-trigger">👽</div>
+            <div id="emoji-selector">
+                <div class="emoji-option">👽</div>
+                <div class="emoji-option">👾</div>
+                <div class="emoji-option">👻</div>
+                <div class="emoji-option">🤖</div>
+                <div class="emoji-option">🦊</div>
+                <div class="emoji-option">🍄</div>
+                <div class="emoji-option">💀</div>
+                <div class="emoji-option">🐱</div>
+            </div>
+            
+            <div class="login-title" id="login-title">PLAYER X</div>
+            <input type="text" class="login-input" id="player-name-input" maxlength="8" placeholder="Digite seu nome" autocomplete="off">
+            <p class="login-info">Suas pontuações são armazenadas automaticamente neste navegador.</p>
+            
+            <button class="btn-confirm-login" id="btn-confirm-login">Confirmar</button>
+        </div>
+    </div>
+
     <div id="fatal-overlay" class="fatal-error-overlay">
         <h1>CONEXÃO PERDIDA</h1>
         <p>A ligação com a TV foi encerrada inesperadamente.<br><br>Por favor, feche esta aba e volte a ler o QR Code no ecrã da TV para jogar novamente.</p>
     </div>
 
     <div class="top-controls">
+        <div id="btn-profile" class="system-btn profile-btn">👽</div>
         <div id="btn-menu" class="system-btn"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></div>
         <div id="btn-pause" class="system-btn"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg></div>
         <div id="btn-disconnect" class="system-btn"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg></div>
@@ -67,8 +121,72 @@
             const rawRoom = urlParams.get('sala') || "0000";
             const playerId = (urlParams.get('jogador') === "2") ? "2" : "1";
             const roomId = rawRoom.replace(/[^a-zA-Z0-9-]/g, '');
-            document.getElementById('player-id').innerText = "PLAY " + playerId;
             
+            // Definições visuais por Player
+            const playerColor = playerId === "1" ? "#00e5ff" : "#be2edd"; // Ciano ou Magenta
+            document.getElementById('player-id').innerText = "PLAY " + playerId;
+            document.getElementById('login-title').innerText = "PLAYER " + playerId;
+            document.getElementById('login-title').style.color = playerColor;
+            document.getElementById('btn-profile').style.borderColor = playerColor;
+            
+            // --- GESTÃO DE PERFIL (LOCAL STORAGE) ---
+            let currentName = localStorage.getItem('arcade_player_name') || "";
+            let currentEmoji = localStorage.getItem('arcade_player_emoji') || "👽";
+            
+            const overlay = document.getElementById('login-overlay');
+            const nameInput = document.getElementById('player-name-input');
+            const avatarTrigger = document.getElementById('avatar-trigger');
+            const emojiSelector = document.getElementById('emoji-selector');
+            const btnProfile = document.getElementById('btn-profile');
+            
+            // Inicializa a UI com os dados salvos
+            avatarTrigger.innerText = currentEmoji;
+            btnProfile.innerText = currentEmoji;
+            nameInput.value = currentName;
+
+            // Mostra o pop-up APENAS se não houver nome salvo
+            if (!currentName) { overlay.style.display = 'flex'; }
+
+            // Abrir pop-up ao clicar no avatar do controle
+            btnProfile.addEventListener('click', (e) => { 
+                e.preventDefault(); 
+                nameInput.value = currentName; 
+                avatarTrigger.innerText = currentEmoji;
+                overlay.style.display = 'flex'; 
+            });
+
+            // Seletor de Emojis
+            avatarTrigger.addEventListener('click', () => {
+                emojiSelector.style.display = emojiSelector.style.display === 'flex' ? 'none' : 'flex';
+            });
+
+            document.querySelectorAll('.emoji-option').forEach(el => {
+                el.addEventListener('click', (e) => {
+                    currentEmoji = e.target.innerText;
+                    avatarTrigger.innerText = currentEmoji;
+                    emojiSelector.style.display = 'none';
+                });
+            });
+
+            // Confirmar Login
+            document.getElementById('btn-confirm-login').addEventListener('click', () => {
+                let typedName = nameInput.value.trim().toUpperCase();
+                if (!typedName) typedName = "P" + playerId; // Fallback se deixar vazio
+                
+                currentName = typedName;
+                localStorage.setItem('arcade_player_name', currentName);
+                localStorage.setItem('arcade_player_emoji', currentEmoji);
+                
+                btnProfile.innerText = currentEmoji;
+                overlay.style.display = 'none';
+                
+                // Envia imediatamente o nome atualizado para a TV se já estiver conectado
+                if (isConnected && !forceClosed) {
+                    sendCmd("PROFILE:" + currentName, 1, true); 
+                }
+            });
+            // ------------------------------------------
+
             const topic = "arcade/game/" + roomId;
             const clientId = "celular_" + playerId + "_" + Date.now().toString(36);
             
@@ -95,7 +213,6 @@
                     const payload = message.payloadString;
                     if (payload === "SYS_TV_OFFLINE") { triggerFatalDisconnect(); return; }
                     
-                    // --- Negociação WebRTC ---
                     if (payload.startsWith(`RTC_SIG_P${playerId}_`)) {
                         const data = JSON.parse(payload.substring(11));
                         if (data.type === 'offer') {
@@ -107,12 +224,12 @@
                                 dataChannel.onopen = () => { 
                                     useWebRTC = true; 
                                     document.getElementById('status').innerText = "Conectado (P2P Rápido)";
-                                    document.getElementById('status').style.color = "#00e5ff"; // Azul indicando P2P
+                                    document.getElementById('status').style.color = "#00e5ff"; 
                                 };
                                 dataChannel.onclose = () => { 
                                     useWebRTC = false; 
                                     document.getElementById('status').innerText = "Conectado (Nuvem MQTT)";
-                                    document.getElementById('status').style.color = "#2ecc71"; // Verde indicando Cloud Fallback
+                                    document.getElementById('status').style.color = "#2ecc71"; 
                                 };
                                 dataChannel.onmessage = e => {
                                     if (e.data === "SYS_TV_OFFLINE") triggerFatalDisconnect();
@@ -126,8 +243,6 @@
                         } else if (data.type === 'candidate' && pc) { pc.addIceCandidate(new RTCIceCandidate(data.candidate)); }
                         return;
                     }
-                    // -------------------------
-
                     if (payload.startsWith("SYS_PING_P" + playerId + "_")) sendCmd("PONG_" + payload.split("_")[3], 0);
                 };
 
@@ -144,7 +259,11 @@
                         if (forceClosed) { client.disconnect(); return; }
                         reconnectDelay = 2000; client.subscribe(topic); 
                         document.getElementById('status').innerText = "Conectado (Nuvem MQTT)"; document.getElementById('status').style.color = "#2ecc71";
-                        sendCmd("CONNECT", 1, true); // Força envio MQTT no Handshake
+                        sendCmd("CONNECT", 1, true); 
+                        
+                        // Após conectar, se já houver nome salvo, envia para a TV
+                        if (currentName) { sendCmd("PROFILE:" + currentName, 1, true); }
+
                         clearInterval(pingInterval); pingInterval = setInterval(() => { if (isConnected && !forceClosed) sendCmd("PING", 0); }, 5000);
                     },
                     onFailure: () => {
@@ -158,14 +277,13 @@
 
             connectMQTT();
             
-            // Função sendCmd Híbrida: Usa P2P sempre que disponível
             function sendCmd(cmd, qos = 0, forceMQTT = false) {
                 const fullCmd = "P" + playerId + "_" + cmd;
                 if (useWebRTC && dataChannel && dataChannel.readyState === 'open' && !forceMQTT) {
-                    dataChannel.send(fullCmd); // Tráfego Ultra Rápido (UDP)
+                    dataChannel.send(fullCmd); 
                 } else if(client && client.isConnected() && isConnected && !forceClosed) {
                     const message = new Paho.MQTT.Message(fullCmd);
-                    message.destinationName = topic; message.qos = qos; client.send(message); // Fallback MQTT
+                    message.destinationName = topic; message.qos = qos; client.send(message); 
                 }
             }
             
@@ -211,7 +329,7 @@
             resizeObserver.observe(document.body); updateHitboxes();
 
             function handleTouchEvents(e) {
-                if (e.target.closest('.top-controls')) return; 
+                if (e.target.closest('.top-controls') || e.target.closest('#login-overlay')) return; 
                 e.preventDefault();
                 if (!isConnected || forceClosed) return; 
 
